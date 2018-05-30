@@ -17,6 +17,10 @@ Configuration variables:
 - **port**: the port of your Tagbox instance
 - **source**: must be a camera.
 
+<p align="center">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/usage.png" width="650">
+</p>
+
 ### Classificationbox
 Get/update Classificationbox [from Dockerhub](https://hub.docker.com/r/machinebox/classificationbox/) by running:
 ```
