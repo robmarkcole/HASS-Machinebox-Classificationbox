@@ -6,6 +6,7 @@ https://home-assistant.io/components/image_processing.classificationbox
 """
 import base64
 import logging
+from urllib.parse import urljoin
 
 import requests
 import voluptuous as vol
@@ -28,9 +29,15 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 
 def encode_image(image):
-    """base64 encode an image stream."""
-    base64_img = base64.b64encode(image).decode('ascii')
-    return {"base64": base64_img}
+    """Encode an image to a base64 string."""
+    img_str = base64.b64encode(image).decode('ascii')
+    return img_str
+
+
+def get_classes(classes_json):
+    """Return the classes data."""
+    return {class_result['id']: round(class_result['score'], 2)
+            for class_result in classes_json}
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
@@ -49,7 +56,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
                     config[CONF_PORT],
                     camera[CONF_ENTITY_ID],
                     model['id'],
-                    model['name']
+                    model['name'],
                 ))
     add_devices(entities)
 
@@ -57,7 +64,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class ClassificationboxEntity(ImageProcessingEntity):
     """Perform an image classification."""
 
-    def __init__(self, ip, port, camera_entity, model_id, model_name):
+    def __init__(self, ip, port, camera_entity,
+                 model_id, model_name):
         """Init with the camera and model info."""
         super().__init__()
         self._base_url = "http://{}:{}/{}/".format(ip, port, CLASSIFIER)
@@ -68,14 +76,25 @@ class ClassificationboxEntity(ImageProcessingEntity):
         self._name = "{} {} {}".format(
             CLASSIFIER, camera_name, model_name)
         self._state = None
+        self._prediction = {}
 
     def process_image(self, image):
         """Process an image."""
+        predict_url = urljoin(
+            self._base_url, "models/{}/predict".format(self._model_id))
+
+        input_json = {
+            "inputs": [{
+                "key": "image",
+                "type": "image_base64",
+                "value": encode_image(image)}
+                       ]}
+
         response = {}
         try:
             response = requests.post(
-                self._url,
-                json=encode_image(image),
+                predict_url,
+                json=input_json,
                 timeout=9
                 ).json()
         except requests.exceptions.ConnectionError:
@@ -83,9 +102,11 @@ class ClassificationboxEntity(ImageProcessingEntity):
             response['success'] = False
 
         if response['success']:
-            self._state = True
+            self._state = response['classes'][0]['id']
+            self._prediction = get_classes(response['classes'])
         else:
             self._state = None
+            self._prediction = {}
 
     @property
     def camera_entity(self):
@@ -105,7 +126,9 @@ class ClassificationboxEntity(ImageProcessingEntity):
     @property
     def device_state_attributes(self):
         """Return the classifier attributes."""
-        return {
+        attr = {
             'model_id': self._model_id,
             'model_name': self._model_name
             }
+        attr.update(self._prediction)
+        return attr
