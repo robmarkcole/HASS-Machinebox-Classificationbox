@@ -1,4 +1,4 @@
-Home-Assistant image classification using [Classificationbox](https://machinebox.io/docs/classificationbox). Follow [this guide](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f ) to create a model/models on Classificationbox. This component adds an `image_processing` entity for each model you have created on Classificationbox, where the state of the entity is the most likely classification of an image using that model.
+Home-Assistant image classification using [Classificationbox](https://machinebox.io/docs/classificationbox). Follow [this guide](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f ) to create a model/models on Classificationbox. This component adds an `image_processing` entity for each model you have created on Classificationbox, where the state of the entity is the most likely classification of an image using that model. An event is fired when the confidence in classification is above the threshold set by `confidence`, which defaults to 80%.
 
 Place the `custom_components` folder in your configuration directory (or add its contents to an existing custom_components folder).
 
@@ -8,6 +8,7 @@ image_processing:
   - platform: classificationbox
     ip_address: localhost
     port: 8080
+    confidence: 50
     source:
       - entity_id: camera.local_file
 ```
@@ -15,6 +16,7 @@ image_processing:
 Configuration variables:
 - **ip_address**: the ip of your Tagbox instance
 - **port**: the port of your Tagbox instance
+- **confidence** (Optional): The minimum of confidence in percent to fire an event. Defaults to 80.
 - **source**: must be a camera.
 
 <p align="center">

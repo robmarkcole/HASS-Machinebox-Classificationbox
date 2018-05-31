@@ -15,7 +15,7 @@ from homeassistant.core import split_entity_id
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.image_processing import (
     PLATFORM_SCHEMA, ImageProcessingEntity, CONF_SOURCE, CONF_ENTITY_ID,
-    CONF_NAME)
+    CONF_CONFIDENCE, DOMAIN)
 from homeassistant.const import (CONF_IP_ADDRESS, CONF_PORT)
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,9 +35,10 @@ def encode_image(image):
 
 
 def get_classes(classes_json):
-    """Return the classes data."""
-    return {class_result['id']: round(class_result['score'], 2)
-            for class_result in classes_json}
+    """Extract the id and score (%) and return in a dict for easy display."""
+    classes_dict = {class_result['id']: round(class_result['score'] * 100.0, 2)
+                    for class_result in classes_json}
+    return classes_dict
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
@@ -55,6 +56,7 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
                     config[CONF_IP_ADDRESS],
                     config[CONF_PORT],
                     camera[CONF_ENTITY_ID],
+                    config[CONF_CONFIDENCE],
                     model['id'],
                     model['name'],
                 ))
@@ -64,12 +66,13 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class ClassificationboxEntity(ImageProcessingEntity):
     """Perform an image classification."""
 
-    def __init__(self, ip, port, camera_entity,
+    def __init__(self, ip, port, camera_entity, confidence,
                  model_id, model_name):
         """Init with the camera and model info."""
         super().__init__()
         self._base_url = "http://{}:{}/{}/".format(ip, port, CLASSIFIER)
         self._camera = camera_entity
+        self._confidence = confidence
         self._model_id = model_id
         self._model_name = model_name
         camera_name = split_entity_id(camera_entity)[1]
@@ -102,11 +105,26 @@ class ClassificationboxEntity(ImageProcessingEntity):
             response['success'] = False
 
         if response['success']:
-            self._state = response['classes'][0]['id']
-            self._prediction = get_classes(response['classes'])
+            self._state = response['classes'][0]['id']  # Has the highest prob.
+            classes_dict = get_classes(response['classes'])
+            self._prediction = classes_dict
+            self.process_classifications(classes_dict)
         else:
             self._state = None
             self._prediction = {}
+
+    def process_classifications(self, classes_dict):
+        """Send event with classifications above threshold confidence."""
+        for id, score in classes_dict.items():
+            if score >= self._confidence:
+                self.hass.bus.fire(
+                    DOMAIN, {
+                        'event_type': 'image_classification',
+                        'classifier': CLASSIFIER,
+                        'class_id': id,
+                        'score': score,
+                        'source': self._camera,
+                        })
 
     @property
     def camera_entity(self):
@@ -127,6 +145,7 @@ class ClassificationboxEntity(ImageProcessingEntity):
     def device_state_attributes(self):
         """Return the classifier attributes."""
         attr = {
+            'confidence': self._confidence,
             'model_id': self._model_id,
             'model_name': self._model_name
             }
