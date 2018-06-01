@@ -19,6 +19,28 @@ Configuration variables:
 - **confidence** (Optional): The minimum of confidence in percent to fire an event. Defaults to 80.
 - **source**: must be a camera.
 
+## Automations using events
+
+Events can be used as a trigger for automations, and in the example automation below are used to trigger a notification with the image and the classification:
+
+```yaml
+- action:
+  - data_template:
+      message: 'Class {{ trigger.event.data.class_id }} with probability {{ trigger.event.data.score }}'
+      title: New image classified
+      data:
+        file: ' {{states.camera.dummy.attributes.file_path}} '
+    service: notify.pushbullet
+  alias: Send classification
+  condition: []
+  id: '1120092824611'
+  trigger:
+  - event_data:
+      event_type: image_classification
+    event_type: image_processing
+    platform: event
+```
+
 <p align="center">
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/usage.png" width="650">
 </p>
