@@ -112,6 +112,9 @@ class ClassificationboxEntity(ImageProcessingEntity):
         except requests.exceptions.ConnectionError:
             _LOGGER.error("ConnectionError: Is %s running?", CLASSIFIER)
             response['success'] = False
+        except ValueError:
+            _LOGGER.error("Error with %s query", CLASSIFIER)
+            response['success'] = False
 
         if response['success']:
             self._state = response['classes'][0]['id']  # Has the highest prob.
