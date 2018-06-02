@@ -129,10 +129,12 @@ class ClassificationboxEntity(ImageProcessingEntity):
                 self.hass.bus.fire(
                     DOMAIN, {
                         'event_type': 'image_classification',
+                        'source': self._camera,
                         'classifier': CLASSIFIER,
+                        'model_id': self._model_id,
+                        'model_name': self._model_name,
                         'class_id': id,
                         'score': score,
-                        'source': self._camera,
                         })
 
     @property
