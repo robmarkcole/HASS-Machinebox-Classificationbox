@@ -48,19 +48,28 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     PORT = config[CONF_PORT]
     MODELS_LIST_URL = 'http://{}:{}/{}/models'.format(IP, PORT, CLASSIFIER)
 
-    models_query = requests.get(MODELS_LIST_URL).json()  # Check for models.
-    if models_query['success']:
-        for model in models_query['models']:
-            for camera in config[CONF_SOURCE]:
-                entities.append(ClassificationboxEntity(
-                    config[CONF_IP_ADDRESS],
-                    config[CONF_PORT],
-                    camera[CONF_ENTITY_ID],
-                    config[CONF_CONFIDENCE],
-                    model['id'],
-                    model['name'],
-                ))
-    add_devices(entities)
+    response = {}
+    try:
+        response = requests.get(MODELS_LIST_URL, timeout=9).json()
+    except requests.exceptions.ConnectionError:
+        _LOGGER.error("ConnectionError: Is %s running?", CLASSIFIER)
+        response['success'] = False
+
+    if response['success']:
+        if len(response['models']) == 0:
+            _LOGGER.error("%s error: No models found", CLASSIFIER)
+        else:
+            for model in response['models']:
+                for camera in config[CONF_SOURCE]:
+                    entities.append(ClassificationboxEntity(
+                        config[CONF_IP_ADDRESS],
+                        config[CONF_PORT],
+                        camera[CONF_ENTITY_ID],
+                        config[CONF_CONFIDENCE],
+                        model['id'],
+                        model['name'],
+                        ))
+            add_devices(entities)
 
 
 class ClassificationboxEntity(ImageProcessingEntity):
