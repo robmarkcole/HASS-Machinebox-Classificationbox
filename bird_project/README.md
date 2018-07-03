@@ -20,7 +20,7 @@ However I quickly discovered that all kinds of motion could trigger an image cap
 
 
 ### Introduction to Classificationbox
-[Classificationbox](https://machineboxio.com/docs/classificationbox) provides a ready-to-train classifier, deployed in a Docker container and exposed via a REST API. It uses [online learning](https://en.wikipedia.org/wiki/Online_machine_learning) to train a classifier that can be used to automatically classify various types of data, such as text, images, structured and unstructured data. The publishers of Classificationbox (a company called [Machinebox](https://machineboxio.com/), based in London, UK) advise that the accuracy of a Classificationbox classifier improves with the number and quality of images supplied, where accuracy is the percentage of images correctly classified. If you have less than 30 images of each class (bird/not-bird in this case, so 60 images total), you are better off using [Tagbox](https://machineboxio.com/docs/tagbox), which uses [one-shot learning](https://en.wikipedia.org/wiki/One-shot_learning) and may not be as accurate. In my case I had a total of 1000 images that I had manually sorted in a split 50:50 between bird/not-bird images, so Classificationbox was appropriate.
+[Classificationbox](https://machineboxio.com/docs/classificationbox) provides a ready-to-train classifier, deployed in a Docker container and exposed via a REST API. It uses [online learning](https://en.wikipedia.org/wiki/Online_machine_learning) to train a classifier that can be used to automatically classify various types of data, such as text, images, structured and unstructured data. The publishers of Classificationbox (a company called [Machinebox](https://machineboxio.com/), based in London, UK) advise that the accuracy of a Classificationbox classifier improves with the number and quality of images supplied, where accuracy is the percentage of images correctly classified. If you have less than 30 images of each class (bird/not-bird in this case, so 60 images total), you may achieve better accuracy using [Tagbox](https://machineboxio.com/docs/tagbox), which uses [one-shot learning](https://en.wikipedia.org/wiki/One-shot_learning). I initially experimented with Tagbox but found that in many cases it could not identify a bird in the images, presumably because the illumination in the images is poor and often the bird appears as a colourless silhouette. Luckily I had over 1000 images so could proceed to use Classificationbox.
 
 Assuming you have [Docker installed](https://www.docker.com/community-edition), first download Classificationbox [from Dockerhub](https://hub.docker.com/r/machinebox/classificationbox/) by entering in the terminal:
 
@@ -56,4 +56,33 @@ You should see a response similar to:
 The if you don't get `"success": true` investigate the issue, otherwise you can proceed to training.
 
 ### Training Classificationbox
-[This article](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f) explains the training of Classificationbox, and provides a GO script to perform training. However I've also published a training script in python [teach_classificationbox.py](https://github.com/robmarkcole/classificationbox_python), and I explain its use here. The first step is to decide what and how many classes you want to identify, in my case I wanted two classes, bird/not-bird images. 
+[This article](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f) explains the training of Classificationbox, and provides a GO script to perform training. However I've also published a training script in python [teach_classificationbox.py](https://github.com/robmarkcole/classificationbox_python), and I explain its use here. The first step is to decide what and how many classes you want to identify, in my case I wanted two classes, bird/not-bird images, with examples shown below.
+
+<p align="center">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/bird_not_bird_examples.png" width="700">
+</p>
+
+In my case I had a total of over 1000 images that I manually sorted in two folders of bird/not-bird images, with each folder containing 500 images (this number may well be excessive, and in future work on this project I will experiment on reducing this number, since its quite prohibitive to require so many images). Try to make sure the images are representative of all the situations you will encounter in use, so for example if you were capturing images at day and night, you want your teaching images to also include images at day and night. With the images sorted into the two folders, I ran the  `teach_classificationbox.py` script to train Classificationbox. For 1000 images, teaching took about 30 minutes on my Macbook pro with 8 Gb RAM, but obviously this time will vary depending on your project. You can then use cURL to check the model ID:
+```cURL
+curl http://localhost:8080/classificationbox/models
+```
+This should return something like:
+```
+{
+	"success": true,
+	"models": [
+		{
+			"id": "5b0ce5d8023d4e35",
+			"name": "5b0ce5d8023d4e35"
+		}
+	]
+```
+It is straightforward to download the taught model as a binary file, which you can then transfer to another machine. In my case I performed teaching on my Macbook but actually want to use the model on another machine (a Synology NAS) and again I can use cURL to upload the model file to that machine. To download the model file I used:
+
+```cURL
+curl http://localhost:8080/classificationbox/state/5b0ce5d8023d4e35 --output 5b0ce5d8023d4e35.classificationbox
+```
+
+You will want to replace my model ID (`5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be easily shared.
+
+### Using classificationbox
