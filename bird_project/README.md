@@ -56,13 +56,13 @@ You should see a response similar to:
 The if you don't get `"success": true` investigate the issue, otherwise you can proceed to training.
 
 ### Training Classificationbox
-[This article](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f) explains the training of Classificationbox, and provides a GO script to perform training. However I've also published a training script in python [teach_classificationbox.py](https://github.com/robmarkcole/classificationbox_python), and I explain its use here. The first step is to decide what and how many classes you want to identify, in my case I wanted two classes, bird/not-bird images, with examples shown below.
+[This article](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f) explains the training of Classificationbox, and provides a GO script to perform training. However if you have difficulty getting GO installed on your system (it took me a few tries!) I've also published a training script in python [teach_classificationbox.py](https://github.com/robmarkcole/classificationbox_python). One advantage of the GO script is that it will print out the accuracy of your model, which is a feature I will add to the python script in time. Whichever script you use, the first step is to decide what and how many classes you want to identify. For this project I wanted two classes, bird/not-bird images, with examples shown below.
 
 <p align="center">
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/bird_not_bird_examples.png" width="700">
 </p>
 
-In my case I had a total of over 1000 images that I manually sorted in two folders of bird/not-bird images, with each folder containing 500 images (this number may well be excessive, and in future work on this project I will experiment on reducing this number, since its quite prohibitive to require so many images). Try to make sure the images are representative of all the situations you will encounter in use, so for example if you were capturing images at day and night, you want your teaching images to also include images at day and night. With the images sorted into the two folders, I ran the  `teach_classificationbox.py` script to train Classificationbox. For 1000 images, teaching took about 30 minutes on my Macbook pro with 8 Gb RAM, but obviously this time will vary depending on your project. You can then use cURL to check the model ID:
+I had a total of over 1000 images that I manually sorted in two folders of bird/not-bird images, with each folder containing 500 images (this number may well be excessive, and in future work on this project I will experiment on reducing this number, since its quite prohibitive to require so many images). Make sure that the images you use for training are representative of all the situations you will encounter in use, so for example if you were capturing images at day and night, you want your teaching images to also include images at day and night. With the images sorted into the two folders, I ran the  `teach_classificationbox.py` script to train Classificationbox. For 1000 images, teaching took about 30 minutes on my Macbook Pro with 8 Gb RAM, but obviously this time will vary depending on your project. In also re-ran the teaching with the GO script mentioned earlier and calculated that the model achieved 92% accuracy, pretty respectable! You will want to know the model ID, and can use cURL to check the ID:
 ```cURL
 curl http://localhost:8080/classificationbox/models
 ```
@@ -77,12 +77,18 @@ This should return something like:
 		}
 	]
 ```
-It is straightforward to download the taught model as a binary file, which you can then transfer to another machine. In my case I performed teaching on my Macbook but actually want to use the model on another machine (a Synology NAS) and again I can use cURL to upload the model file to that machine. To download the model file I used:
+It is straightforward to download the model as a binary file, which you can then transfer to another machine. In my case I performed teaching on my Macbook but actually want to use the model on another machine (a Synology NAS) and again I can use cURL to upload the model file to that machine. To download the model file I used:
 
 ```cURL
 curl http://localhost:8080/classificationbox/state/5b0ce5d8023d4e35 --output 5b0ce5d8023d4e35.classificationbox
 ```
 
-You will want to replace my model ID (`5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be easily shared.
+You will want to replace my model ID (`5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be shared on Github and other online hosts. This is useful if you want others to be able to reproduce your work.
 
-### Using classificationbox
+### Using Classificationbox
+You can perform a quick image classification using the model by using cURL. From within the same folder as the image `bird.jpg` I used the following:
+
+```cURL
+curl -X POST -F 'file=@bird.jpg' http://localhost:8080/classificationbox/models/5b0ce5d8023d4e35/predict
+```
+GETTING AN ERROR
