@@ -56,4 +56,4 @@ You should see a response similar to:
 The if you don't get `"success": true` investigate the issue, otherwise you can proceed to training.
 
 ### Training Classificationbox
-[This article](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f) explains the training of Classificationbox. You can use the GO script in that article for training, but I've also published a training script in python, [here](https://github.com/robmarkcole/classificationbox_python). 
+[This article](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f) explains the training of Classificationbox, and provides a GO script to perform training. However I've also published a training script in python [teach_classificationbox.py](https://github.com/robmarkcole/classificationbox_python), and I explain its use here. The first step is to decide what and how many classes you want to identify, in my case I wanted two classes, bird/not-bird images. 
