@@ -83,17 +83,187 @@ It is straightforward to download the model as a binary file, which you can then
 curl http://localhost:8080/classificationbox/state/5b0ce5d8023d4e35 --output 5b0ce5d8023d4e35.classificationbox
 ```
 
-You will want to replace my model ID (`5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be shared on Github and other online hosts. This is useful if you want others to be able to reproduce your work.
+You will want to replace my model ID (`5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be shared on Github and other online hosts. This is useful if you want others to be able to reproduce your work. There is a variety of ways to post the model file to another instance of Classificationbox, for example if you want to use the model on another machine as I am doing. Search the Classificationbox docs for `Uploading state`. Personally I used pythons requests library to post the model file from my Macbook to a Synology using:
+
+```python
+import base64
+import requests
+
+MODEL_STATE_URL = 'http://{}:{}/classificationbox/state/{}'.format(IP, PORT, MODEL_ID)
+filename = '/path/to/model/5b0ce5d8023d4e35.classificationbox'
+with open(file_path, "rb") as f:
+        file_data = base64.b64encode(f.read()).decode('ascii')
+model_data  = {"base64": file_data}
+requests.post(STATE_POST_URL, json=model_data).json()
+```
+
+You should see a response like:
+```
+{'success': True,
+ 'id': '5b0ce5d8023d4e35',
+ 'name': '5b0ce5d8023d4e35',
+ 'options': {},
+ 'predict_only': False}
+ ```
 
 ### Using Classificationbox with Home-Assistant
-There is not a cURL command we can use to perform a classification on an image using Classificationbox, so instead I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the documents online. Here we use Home-Assistant to post images from my motion triggered webcam to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
+There is not a cURL command we can use to perform a classification on an image using Classificationbox, so instead I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the documents online. Note that there are a couple of different ways to run Home-Assistant. In this project I am using the Hassio approach with you should [read about here](https://www.home-assistant.io/hassio/). However it doesn't matter how you have Home-Assistant running, this project will work with all approaches.
+
+In this project we use Home-Assistant to post images from my motion triggered webcam to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
 
 <p align="center">
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/system_overview.png" width="700">
 </p>
 
-##### Hardware
+#### Hardware
 * **Webcam**: I picked up a [cheap webcam on Amazon](https://www.amazon.co.uk/gp/product/B000Q3VECE/ref=oh_aui_search_detailpage?ie=UTF8&psc=1). However you can use [any camera](https://www.home-assistant.io/components/#camera) that is compatible with Home-Assistant.
 * **Pi 3**: I have the camera connected via USB to a raspberry pi 3 running Home-Assistant.
 * **Synology NAS**: The pi 3 doesn't have sufficient RAM to run Classificationbox (2 GB min required) so instead I am running it on my [Synology DS216+II](https://www.amazon.co.uk/gp/product/B01G3HYR6G/ref=oh_aui_search_detailpage?ie=UTF8&psc=1) that I have [upgraded to have 8 GB RAM](http://blog.fedorov.com.au/2016/02/how-to-upgrade-memory-in-synology-ds216.html).
 * **Bird feeder**: My mum bought this, but there are similar online, just search for `windown mounted birdfeeder`.
+
+#### Home-Assistant Configuration
+##### Classificationbox custom component
+First of all you need to [get the code from here](https://github.com/robmarkcole/HASS-Machinebox-Classificationbox) to use Classificationbox with Home-Assistant. This code is called a `custom component` by Home-Assistant users, and it is added by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The `yaml` code-blocks that follow are all code to be entered in the Home-Assistant `configuration.yaml` file.
+
+```yaml
+image_processing:
+  - platform: classificationbox
+    ip_address: 192.168.0.18 # Change to the IP hosting Classificationbox
+    port: 8080
+    scan_interval: 100000
+    source:
+      - entity_id: camera.dummy
+```
+With the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it. Next I configure the camera which will have the entity_id `camera.dummy`.
+
+
+##### Motion detection with a USB camera
+I have a cheap usb webcam that captures images on motion detection [using](https://community.home-assistant.io/t/usb-webcam-on-hassio/37297/7) the [motion](https://motion-project.github.io/) Hassio addon. The final view of the camera feed in Home-Assistant is shown below, with the live view camera image just cropped off the bottom of the image.
+
+<p align="center">
+<img src="https://github.com/robmarkcole/robins-hassio-config/blob/master/images/HA_motion_camera_view.png" width="500">
+</p>
+
+I've configured the motion add-on via its Hassio tab with the following settings:
+
+```yaml
+{
+  "config": "",
+  "videodevice": "/dev/video0",
+  "input": 0,
+  "width": 640,
+  "height": 480,
+  "framerate": 2,
+  "text_right": "%Y-%m-%d %T-%q",
+  "target_dir": "/share/motion",
+  "snapshot_interval": 1,
+  "snapshot_name": "latest",
+  "picture_output": "best",
+  "picture_name": "%v-%Y_%m_%d_%H_%M_%S-motion-capture",
+  "webcontrol_local": "on",
+  "webcontrol_html": "on"
+}
+```
+This setup captures an image every second, saved as `latest.jpg`, and is over-written every second. Additionally, on motion detection a time-stamped image is captured with format `%v-%Y_%m_%d_%H_%M_%S-motion-capture.jpg`.
+
+The image `latest.jpg` is displayed on the HA front-end using a [local-file camera](https://home-assistant.io/components/camera.local_file/). I will also display the last time-stamped image with a second `local_file` camera. **Note** that the image files (here `latest.jpg` and `dummy.jpg`) must be present when Home-Assistant starts as the component makes a check that the file exists, and therefore if running for the first time just copy some appropriately named images into the `/share/motion` folder. In `configuration.yaml`:
+
+```yaml
+camera:
+  - platform: local_file
+    file_path: /share/motion/latest.jpg
+    name: "Live view"
+  - platform: local_file
+    file_path: /share/motion/dummy.jpg
+    name: "dummy"
+```
+I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to detect when new time-stamped images are saved to disk on the raspberry Pi:
+
+```yaml
+folder_watcher:
+  - folder: /share/motion
+    patterns:
+      - '*capture.jpg'
+```
+
+The `folder_watcher` fires an event with data including the image path to the added file. I use an automation to display the new image on the `dummy` camera using the `camera.update_file_path` service:
+
+```yaml
+- action:
+    data_template:
+      file_path: ' {{ trigger.event.data.path }} '
+    entity_id: camera.dummy
+    service: camera.local_file_update_file_path
+  alias: Display new image
+  condition: []
+  id: '1520092824633'
+  trigger:
+  - event_data:
+      event_type: created
+    event_type: folder_watcher
+    platform: event
+```
+
+I use a template sensor (in `sensors.yaml`) to break out the new file path:
+```yaml
+- platform: template
+  sensors:
+    last_added_file:
+      friendly_name: Last added file
+      value_template: "{{states.camera.dummy.attributes.file_path}}"
+```
+I use an automation triggered by the state change of the template sensor to trigger the `image_processing.scan` service which sends the new image for classification by Classificationbox:
+
+```yaml
+- id: '1527837198169'
+  alias: Perform image classification
+  trigger:
+  - entity_id: sensor.last_added_file
+    platform: state
+  condition: []
+  action:
+  - data:
+      entity_id: camera.dummy
+    service: image_processing.scan
+```
+
+Finally I use the event fired by the image classification to trigger an automation to send me the new image and classification as a [Pushbullet](https://www.pushbullet.com/) notification:
+
+```yaml
+- action:
+  - data_template:
+      message: Class {{ trigger.event.data.class_id }} with probability {{ trigger.event.data.score }}
+      title: New image classified
+      data:
+        file: ' {{states.camera.dummy.attributes.file_path}} '
+    service: notify.pushbullet
+  alias: Send classification
+  condition: []
+  id: '1120092824611'
+  trigger:
+  - event_data:
+      event_type: image_classification
+    event_type: image_processing
+    platform: event
+```
+
+<p align="center">
+<img src="https://github.com/robmarkcole/robins-hassio-config/blob/master/images/iphone_notification.jpeg" width="300">
+</p>
+
+A photo of my birdfeeder setup is shown below.
+
+<p align="center">
+<img src="https://github.com/robmarkcole/robins-hassio-config/blob/master/images/camera_setup.jpg" width="500">
+</p>
+
+### Summary
+In summary this write-up has described how to create an image classifier using Classificationbox, and how to deploy it for use with Home-Assistant. A cheap webcam is used to capture motion triggered images, which are posted to Classificationbox, and if there are birds in the image then the image is sent to my phone as a notification. Future work on this project is to train the classifier to identify different species of birds arriving at the bird feeder. One slight issue I have is that a magpi has been trying to rip the feeder off the window, so I need to do some work to make it magpi proof! I hope this project inspires you to try out using image classifiers in your projects.
+
+### Links
+* Classificationbox: https://machineboxio.com/docs/classificationbox) provides
+* Home-Assistant: https://www.home-assistant.io/
+* Hassio: https://www.home-assistant.io/hassio/
+* Docker: https://www.docker.com/community-edition
+* Classificationbox custom component for Home-Assistant: https://github.com/robmarkcole/HASS-Machinebox-Classificationbox
+* Pushbullet: https://www.pushbullet.com/
