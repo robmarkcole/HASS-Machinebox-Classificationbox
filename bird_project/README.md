@@ -85,5 +85,15 @@ curl http://localhost:8080/classificationbox/state/5b0ce5d8023d4e35 --output 5b0
 
 You will want to replace my model ID (`5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be shared on Github and other online hosts. This is useful if you want others to be able to reproduce your work.
 
-### Using Classificationbox
+### Using Classificationbox with Home-Assistant
 There is not a cURL command we can use to perform a classification on an image using Classificationbox, so instead I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the documents online. Here we use Home-Assistant to post images from my motion triggered webcam to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
+
+<p align="center">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/system_overview.png" width="700">
+</p>
+
+##### Hardware
+* **Webcam**: I picked up a [cheap webcam on Amazon](https://www.amazon.co.uk/gp/product/B000Q3VECE/ref=oh_aui_search_detailpage?ie=UTF8&psc=1). However you can use [any camera](https://www.home-assistant.io/components/#camera) that is compatible with Home-Assistant.
+* **Pi 3**: I have the camera connected via USB to a raspberry pi 3 running Home-Assistant.
+* **Synology NAS**: The pi 3 doesn't have sufficient RAM to run Classificationbox (2 GB min required) so instead I am running it on my [Synology DS216+II](https://www.amazon.co.uk/gp/product/B01G3HYR6G/ref=oh_aui_search_detailpage?ie=UTF8&psc=1) that I have [upgraded to have 8 GB RAM](http://blog.fedorov.com.au/2016/02/how-to-upgrade-memory-in-synology-ds216.html).
+* **Bird feeder**: My mum bought this, but there are similar online, just search for `windown mounted birdfeeder`.
