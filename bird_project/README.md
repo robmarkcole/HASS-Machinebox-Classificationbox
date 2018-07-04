@@ -141,7 +141,7 @@ With the long `scan_interval` I am ensuring that image classification will only 
 I have a cheap usb webcam that captures images on motion detection [using](https://community.home-assistant.io/t/usb-webcam-on-hassio/37297/7) the [motion](https://motion-project.github.io/) Hassio addon. The final view of the camera feed in Home-Assistant is shown below, with the live view camera image just cropped off the bottom of the image.
 
 <p align="center">
-<img src="https://github.com/robmarkcole/robins-hassio-config/blob/master/images/HA_motion_camera_view.png" width="500">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/HA_motion_camera_view.png" width="500">
 </p>
 
 I've configured the motion add-on via its Hassio tab with the following settings:
@@ -248,17 +248,21 @@ Finally I use the event fired by the image classification to trigger an automati
 ```
 
 <p align="center">
-<img src="https://github.com/robmarkcole/robins-hassio-config/blob/master/images/iphone_notification.jpeg" width="300">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/iphone_notification.jpeg" width="300">
 </p>
 
 A photo of my birdfeeder setup is shown below.
 
 <p align="center">
-<img src="https://github.com/robmarkcole/robins-hassio-config/blob/master/images/camera_setup.jpg" width="500">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/camera_setup.jpg" width="500">
 </p>
 
 ### Summary
-In summary this write-up has described how to create an image classifier using Classificationbox, and how to deploy it for use with Home-Assistant. A cheap webcam is used to capture motion triggered images, which are posted to Classificationbox, and if there are birds in the image then the image is sent to my phone as a notification. Future work on this project is to train the classifier to identify different species of birds arriving at the bird feeder. One slight issue I have is that a magpi has been trying to rip the feeder off the window, so I need to do some work to make it magpi proof! I hope this project inspires you to try out using image classifiers in your projects.
+In summary this write-up has described how to create an image classifier using Classificationbox, and how to deploy it for use with Home-Assistant. A cheap webcam is used to capture motion triggered images, which are posted to Classificationbox, and if there are birds in the image then the image is sent to my phone as a notification. Future work on this project is to train the classifier to identify different species of birds arriving at the bird feeder. One slight issue I have is that a magpi has been trying to rip the feeder off the window (shown below), so I need to do some work to make it magpi proof! I hope this project inspires you to try out using image classifiers in your projects.
+
+<p align="center">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/magpi.png" width="500">
+</p>
 
 ### Links
 * Classificationbox: https://machineboxio.com/docs/classificationbox) provides
