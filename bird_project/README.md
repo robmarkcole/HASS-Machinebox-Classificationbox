@@ -86,9 +86,4 @@ curl http://localhost:8080/classificationbox/state/5b0ce5d8023d4e35 --output 5b0
 You will want to replace my model ID (`5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be shared on Github and other online hosts. This is useful if you want others to be able to reproduce your work.
 
 ### Using Classificationbox
-You can perform a quick image classification using the model by using cURL. From within the same folder as the image `bird.jpg` I used the following:
-
-```cURL
-curl -X POST -F 'file=@bird.jpg' http://localhost:8080/classificationbox/models/5b0ce5d8023d4e35/predict
-```
-GETTING AN ERROR
+There is not a cURL command we can use to perform a classification on an image using Classificationbox, so instead I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the documents online. Here we use Home-Assistant to post images from my motion triggered webcam to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
