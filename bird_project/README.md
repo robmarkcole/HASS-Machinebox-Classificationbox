@@ -94,7 +94,7 @@ filename = '/path/to/model/5b0ce5d8023d4e35.classificationbox'
 with open(file_path, "rb") as f:
         file_data = base64.b64encode(f.read()).decode('ascii')
 model_data  = {"base64": file_data}
-requests.post(STATE_POST_URL, json=model_data).json()
+requests.post(STATE_POST_URL, json=model_data)
 ```
 
 You should see a response like:
@@ -138,7 +138,7 @@ With the long `scan_interval` I am ensuring that image classification will only 
 
 
 ##### Motion detection with a USB camera
-I have a cheap usb webcam that captures images on motion detection [using](https://community.home-assistant.io/t/usb-webcam-on-hassio/37297/7) the [motion](https://motion-project.github.io/) Hassio addon. The final view of the camera feed in Home-Assistant is shown below, with the live view camera image just cropped off the bottom of the image.
+I have a cheap usb webcam that captures images on motion detection [using](https://community.home-assistant.io/t/usb-webcam-on-hassio/37297/7) the [motion](https://motion-project.github.io/) Hassio addon. The final view of the camera feed in Home-Assistant is shown below.
 
 <p align="center">
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/HA_motion_camera_view.png" width="500">
@@ -255,7 +255,7 @@ Finally I use the event fired by the image classification to trigger an automati
 In summary this write-up has described how to create an image classifier using Classificationbox, and how to deploy it for use with Home-Assistant. A cheap webcam is used to capture motion triggered images, which are posted to Classificationbox, and if there are birds in the image then the image is sent to my phone as a notification. Future work on this project is to train the classifier to identify different species of birds arriving at the bird feeder. One slight issue I have is that a magpi has been trying to rip the feeder off the window (shown below), so I need to do some work to make it magpi proof! I hope this project inspires you to try out using image classifiers in your projects.
 
 <p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/magpi.png" width="700">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/magpi.png" width="900">
 </p>
 
 ### Links
