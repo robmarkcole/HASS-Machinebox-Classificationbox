@@ -13,7 +13,7 @@ This write-up will first present the image classification work using Classificat
 Being interested in bird watching, I attached a bird feeder to a window of my flat and within a few days various species of bird started visiting the feeder. I decided it would be fun to rig up a motion triggered camera to capture images of the birds, and I used Home-Assistant and a £10 USB webcam to capture images via motion trigger, and setup Home-Assistant to send an image notification to my phone when an image was captured. This setup is shown below:
 
 <p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/setup.png" width="900">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/setup.png" width="800">
 </p>
 
 However I quickly discovered that all kinds of motion could trigger an image capture. The result was hundreds of images of all kinds of motion, such as planes flying in the distance or even funky light effects. Approximately less than half the images actually contained a bird, so I decided it was necessary to filter out the non-bird images. I have been interested in image classification for a while, and whilst searching online I came across [this article on Classificationbox](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f), which looked ideal for this project.
@@ -59,7 +59,7 @@ The if you don't get `"success": true` investigate the issue, otherwise you can 
 [This article](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f) explains the training of Classificationbox, and provides a GO script to perform training. However if you have difficulty getting GO installed on your system (it took me a few tries!) I've also published a training script in python [teach_classificationbox.py](https://github.com/robmarkcole/classificationbox_python). One advantage of the GO script is that it will print out the accuracy of your model, which is a feature I will add to the python script in time. Whichever script you use, the first step is to decide what and how many classes you want to identify. For this project I wanted two classes, bird/not-bird images, with examples shown below.
 
 <p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/bird_not_bird_examples.png" width="900">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/bird_not_bird_examples.png" width="800">
 </p>
 
 I had a total of over 1000 images that I manually sorted in two folders of bird/not-bird images, with each folder containing 500 images (this number may well be excessive, and in future work on this project I will experiment on reducing this number, since its quite prohibitive to require so many images). Make sure that the images you use for training are representative of all the situations you will encounter in use, so for example if you were capturing images at day and night, you want your teaching images to also include images at day and night. With the images sorted into the two folders, I ran the  `teach_classificationbox.py` script to train Classificationbox. For 1000 images, teaching took about 30 minutes on my Macbook Pro with 8 Gb RAM, but obviously this time will vary depending on your project. In also re-ran the teaching with the GO script mentioned earlier and calculated that the model achieved 92% accuracy, pretty respectable! You will want to know the model ID, and can use cURL to check the ID:
@@ -77,13 +77,13 @@ This should return something like:
 		}
 	]
 ```
-It is straightforward to download the model as a binary file, which you can then transfer to another machine. In my case I performed teaching on my Macbook but actually want to use the model on another machine (a Synology NAS) and again I can use cURL to upload the model file to that machine. To download the model file I used:
+It is straightforward to download the model as a binary file, which you can then transfer to another machine. In my case I performed teaching on my Macbook but actually want to use the model on another machine (a Synology NAS). To download the model file I used:
 
 ```cURL
 curl http://localhost:8080/classificationbox/state/5b0ce5d8023d4e35 --output 5b0ce5d8023d4e35.classificationbox
 ```
 
-You will want to replace my model ID (`5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be shared on Github and other online hosts. This is useful if you want others to be able to reproduce your work. There is a variety of ways to post the model file to another instance of Classificationbox, for example if you want to use the model on another machine as I am doing. Search the Classificationbox docs for `Uploading state`. Personally I used pythons requests library to post the model file from my Macbook to a Synology using:
+You will want to replace my model ID (`MODEL_ID 5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be shared on Github and other online hosts. This is useful if you want others to be able to reproduce your work. There is a variety of ways to post the model file to another instance of Classificationbox, for example if you want to use the model on another machine as I am doing. Search the Classificationbox docs for `Uploading state`. Personally I used the python requests library to post the model file from my Macbook to my  Synology using:
 
 ```python
 import base64
@@ -97,7 +97,7 @@ model_data  = {"base64": file_data}
 requests.post(STATE_POST_URL, json=model_data)
 ```
 
-You should see a response like:
+Replace the IP and PORT with those of your target machine, which for my Synology was `IP 192.168.0.18` You should see a response like:
 ```
 {'success': True,
  'id': '5b0ce5d8023d4e35',
@@ -107,9 +107,9 @@ You should see a response like:
  ```
 
 ### Using Classificationbox with Home-Assistant
-There is not a cURL command we can use to perform a classification on an image using Classificationbox, so instead I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the documents online. Note that there are a couple of different ways to run Home-Assistant. In this project I am using the Hassio approach with you should [read about here](https://www.home-assistant.io/hassio/). However it doesn't matter how you have Home-Assistant running, this project will work with all approaches.
+There is not a cURL command we can use to perform a classification on an image using Classificationbox, so instead I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the [documents online](https://www.home-assistant.io/). Note that there are a couple of different ways to run Home-Assistant. In this project I am using the Hassio approach which you should [read about here](https://www.home-assistant.io/hassio/), running on a Raspberry Pi 3. However it doesn't matter how you have Home-Assistant running, this project should work with all common approaches.
 
-In this project we use Home-Assistant to post images from my motion triggered webcam to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
+In this project we use Home-Assistant to post images from my motion triggered usb camera to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
 
 <p align="center">
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/system_overview.png" width="900">
@@ -141,7 +141,7 @@ With the long `scan_interval` I am ensuring that image classification will only 
 I have a cheap usb webcam that captures images on motion detection [using](https://community.home-assistant.io/t/usb-webcam-on-hassio/37297/7) the [motion](https://motion-project.github.io/) Hassio addon. The final view of the camera feed in Home-Assistant is shown below.
 
 <p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/HA_motion_camera_view.png" width="500">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/HA_motion_camera_view.png" width="400">
 </p>
 
 I've configured the motion add-on via its Hassio tab with the following settings:
@@ -248,7 +248,7 @@ Finally I use the event fired by the image classification to trigger an automati
 ```
 
 <p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/iphone_notification.jpeg" width="450">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/iphone_notification.jpeg" width="400">
 </p>
 
 ### Summary
