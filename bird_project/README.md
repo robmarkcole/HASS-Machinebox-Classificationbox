@@ -251,17 +251,11 @@ Finally I use the event fired by the image classification to trigger an automati
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/iphone_notification.jpeg" width="300">
 </p>
 
-A photo of my birdfeeder setup is shown below.
-
-<p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/camera_setup.jpg" width="500">
-</p>
-
 ### Summary
 In summary this write-up has described how to create an image classifier using Classificationbox, and how to deploy it for use with Home-Assistant. A cheap webcam is used to capture motion triggered images, which are posted to Classificationbox, and if there are birds in the image then the image is sent to my phone as a notification. Future work on this project is to train the classifier to identify different species of birds arriving at the bird feeder. One slight issue I have is that a magpi has been trying to rip the feeder off the window (shown below), so I need to do some work to make it magpi proof! I hope this project inspires you to try out using image classifiers in your projects.
 
 <p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/magpi.png" width="500">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/magpi.png" width="700">
 </p>
 
 ### Links
