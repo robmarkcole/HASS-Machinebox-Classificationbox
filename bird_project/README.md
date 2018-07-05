@@ -77,7 +77,29 @@ This should return something like:
 		}
 	]
 ```
-It is straightforward to download the model as a binary file, which you can then transfer to another machine. In my case I performed teaching on my Macbook but actually want to use the model on another machine (a Synology NAS). To download the model file I used:
+Now that the model is created we can use another cURL command to perform a classification on an image `bird.jpg`. I enter:
+```
+export FOO=`base64 -in /absolute/path/to/bird.jpg`
+
+curl -X POST -H "Content-Type: application/json" -d  '{ "inputs": [ {"type": "image_base64", "key": "image", "value": "'$FOO'" } ] }' http://localhost:8080/classificationbox/models/5b0ce5d8023d4e35/predict
+```
+I then see:
+```
+{
+	"success": true,
+	"classes": [
+		{
+			"id": "birds",
+			"score": 0.915892
+		},
+		{
+			"id": "not_birds",
+			"score": 0.084108
+		}
+	]
+```
+
+Now that we have confirmed the model is performing correctly, we can download the model as a binary file. This is important if you are on the free tier of Machinebox as the model will be deleted every time you restart the Docker container. Once we have the model binary file we can upload it after restarting the Docker container, or transfer it another machine. In my case I performed teaching on my Macbook but actually want to use the model in production on a Synology NAS. To download the model file I used:
 
 ```cURL
 curl http://localhost:8080/classificationbox/state/5b0ce5d8023d4e35 --output 5b0ce5d8023d4e35.classificationbox
@@ -107,7 +129,7 @@ Replace the `IP` and `PORT` with those of your target machine, which for my Syno
  ```
 
 ### Using Classificationbox with Home-Assistant
-There is not a cURL command we can use to perform a classification on an image using Classificationbox, so instead I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the [documents online](https://www.home-assistant.io/). Note that there are a couple of different ways to run Home-Assistant. In this project I am using the Hassio approach which you should [read about here](https://www.home-assistant.io/hassio/), running on a Raspberry Pi 3. However it doesn't matter how you have Home-Assistant running, this project should work with all common approaches.
+I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the [documents online](https://www.home-assistant.io/). Note that there are a couple of different ways to run Home-Assistant. In this project I am using the Hassio approach which you should [read about here](https://www.home-assistant.io/hassio/), running on a Raspberry Pi 3. However it doesn't matter how you have Home-Assistant running, this project should work with all common approaches.
 
 In this project we use Home-Assistant to post images from my motion triggered usb camera to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
 
