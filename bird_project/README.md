@@ -191,9 +191,7 @@ image_processing:
 With the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it using the `image_processing.scan` service described later. Next I configure the camera which will have the entity_id `camera.dummy`.
 
 ##### Tying it all together
-Now that image capture is configured, and Classificationbox is available to use, we must link them together using a series of simple automations.
-
-Currently Home-Assistant has no knowledge of when the Motion addon captures an image, so I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to detect when new time-stamped images are saved in the `/share/motion` directory:
+Now that image capture is configured, and Classificationbox is available to use, we must link them together using a series of simple automations. Currently Home-Assistant has no knowledge of when the Motion addon captures an image, so I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to detect when new time-stamped images are saved in the `/share/motion` directory:
 
 ```yaml
 folder_watcher:
@@ -202,7 +200,7 @@ folder_watcher:
       - '*capture.jpg'
 ```
 
-The `folder_watcher` fires an event every time a time-stamped image is saved, with the event data including the path to the added image. I use an automation to display the new image on the `dummy` camera using the `camera.update_file_path` service, and the configuration for the automation is shown below, added to `automations.yaml`:
+The `folder_watcher` fires an event every time a time-stamped image is saved, with the event data including the filename and path to the added image. I use an automation to display the new image on the `dummy` camera using the `camera.update_file_path` service, and the configuration for the automation is shown below, added to `automations.yaml`:
 
 ```yaml
 - action:
@@ -220,7 +218,7 @@ The `folder_watcher` fires an event every time a time-stamped image is saved, wi
     platform: event
 ```
 
-I use a template sensor to display the image file path, configured in n `sensors.yaml`:
+I use a template sensor to display the image file path that is available as an attribute on the `dummy` camera. The sensor is configured in `sensors.yaml`:
 
 ```yaml
 - platform: template
@@ -230,7 +228,7 @@ I use a template sensor to display the image file path, configured in n `sensors
       value_template: "{{states.camera.dummy.attributes.file_path}}"
 ```
 
-I now use an automation to trigger the `image_processing.scan` service which sends the new image for classification by Classificationbox, and this automion triggered by the state change of the template sensor to:
+I now use an automation to trigger the `image_processing.scan` service which sends the new image for classification by Classificationbox, and this automation is triggered by the state change of the template sensor. I add to `automations.yaml`:
 
 ```yaml
 - id: '1527837198169'
