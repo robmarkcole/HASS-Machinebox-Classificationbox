@@ -165,6 +165,7 @@ camera:
     name: "dummy"
 ```
 **Note** that the image files (here `latest.jpg` and `dummy.jpg`) must be present when Home-Assistant starts as the component makes a check that the file exists, and therefore if running for the first time just copy some appropriately named images into the `/share/motion` folder. In `configuration.yaml`:
+
 The final view of the camera feed in Home-Assistant is shown below.
 
 <p align="center">
@@ -172,7 +173,7 @@ The final view of the camera feed in Home-Assistant is shown below.
 </p>
 
 #### Classificationbox custom component
-To make Classificationbox accessible to Home-Assistant you will first need to get the Classificationbox custom component code from https://github.com/robmarkcole/HASS-Machinebox-Classificationbox. This code is added to Home-Assistant by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The `yaml` code-blocks that follow are all code to be entered in the Home-Assistant `configuration.yaml` file.
+To make Classificationbox accessible to Home-Assistant you will first need to get the Classificationbox custom component code from https://github.com/robmarkcole/HASS-Machinebox-Classificationbox. This code is added to Home-Assistant by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The yaml code-blocks that follow are all code to be entered in the Home-Assistant `configuration.yaml` file.
 
 ```yaml
 image_processing:
@@ -186,13 +187,13 @@ image_processing:
 Not that by default the image will be classified every 10 seconds, but with the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it using the `image_processing.scan` service described later. Note that the source is `camera.dummy`, which will be the motion triggered image.
 
 #### Tying it all together
-Now that image capture is configured and Classificationbox is available to use, we must link them together using a sequence of automations in Home-Assistant. The sequence that we setup is illustrated in the diagram below:
+Now that image capture is configured and Classificationbox is available to use, we must link them together using a sequence of automations in Home-Assistant. The sequence that we setup is illustrated in the diagram below, where the blue arrows represent automations:
 
 <p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/sequence.png" width="400">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/sequence.png" width="300">
 </p>
 
-Out of the box, Home-Assistant has no knowledge of when the Motion addon captures a new motion triggered image, so I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to alert Home-Assistant to new images in the `/share/motion` directory:
+Out of the box, Home-Assistant has no knowledge of when the Motion addon captures a new motion triggered image, so I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to alert Home-Assistant to new images in the `/share/motion` directory. The configuration of folder_watcher in `configuration.yaml` is:
 
 ```yaml
 folder_watcher:
@@ -201,7 +202,7 @@ folder_watcher:
       - '*capture.jpg'
 ```
 
-The `folder_watcher` component fires an event every time a new timestamped image is saved, with the event data including the filename and path to the added image. I use an automation to display the new image on the `dummy` camera using the `camera.update_file_path` service, and the configuration for the automation is shown below, added to `automations.yaml`:
+The `folder_watcher` component fires an event every time a new timestamped image is saved in `/share/motion` when the file name matches the pattern `*capture.jpg` (as the timestamped images file names do).  The `folder_watcher` event data including the file name and path to the added image. I use an automation to display the new image on the `camera.dummy` using the `camera.update_file_path` service. The configuration for the automation is shown below, added to `automations.yaml`:
 
 ```yaml
 - action:
@@ -219,7 +220,7 @@ The `folder_watcher` component fires an event every time a new timestamped image
     platform: event
 ```
 
-I use a [template sensor](https://www.home-assistant.io/components/sensor.template/) to display the new image file path, which is available as an attribute on the `dummy` camera. The template_sensor is configured in `sensors.yaml`:
+I use a [template sensor](https://www.home-assistant.io/components/sensor.template/) to display the new image file path, which is available as an attribute on `camera.dummy`. The template sensor is configured in `sensors.yaml`:
 
 ```yaml
 - platform: template
@@ -229,7 +230,7 @@ I use a [template sensor](https://www.home-assistant.io/components/sensor.templa
       value_template: "{{states.camera.dummy.attributes.file_path}}"
 ```
 
-I now use an automation to trigger the `image_processing.scan` service on the `dummy` camera. The `scan` service instructs Home-Assistant to send the image displayed by `dummy` for classification by Classificationbox, and this automation is triggered by the state change of the `file_path` template sensor. I add to `automations.yaml`:
+I now use an automation to trigger the `image_processing.scan` service on `camera.dummy`. The `scan` service instructs Home-Assistant to send the image displayed by `camera.dummy` for classification by Classificationbox, and this automation is triggered by the state change of the `file_path` sensor. I add to `automations.yaml`:
 
 ```yaml
 - id: '1527837198169'
@@ -273,7 +274,7 @@ The notification is shown below.
 </p>
 
 ### Summary
-In summary this write-up has described how to create an image classifier using Classificationbox, and how to deploy it for use with Home-Assistant. A cheap webcam is used to capture motion triggered images, which are posted to Classificationbox, and if there are birds in the image then the image is sent to my phone as a notification. Future work on this project is to train the classifier to identify different species of birds arriving at the bird feeder. One slight issue I have is that a magpi has been trying to rip the feeder off the window (shown below), so I need to do some work to make it magpi proof! I hope this project inspires you to try out using image classifiers in your projects.
+In summary this write-up has described how to create an image classifier using Classificationbox, and how to deploy it for use with Home-Assistant. A cheap webcam is used to capture motion triggered images, which are posted to Classificationbox, and if there are birds in the image then the image is sent to my phone as a notification. Future work on this project is to train the classifier to identify different species of birds arriving at the bird feeder. One slight issue I have is that a magpi has been trying to rip the feeder off the window (shown below), so I need to do some work to make it magpi proof (magpi desctruction efforts shown below)! I hope this project inspires you to try out using image classifiers in your projects.
 
 <p align="center">
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/magpi.png" width="900">
