@@ -28,7 +28,7 @@ Assuming you have [Docker installed](https://www.docker.com/community-edition), 
 sudo docker pull machinebox/classificationbox
 ```
 
-Then run the container and expose on port **8080** with:
+Then run the container and expose on port `8080` with:
 ```
 MB_KEY="INSERT-YOUR-KEY-HERE"
 sudo docker run -p 8080:8080 -e "MB_KEY=$MB_KEY" machinebox/classificationbox
@@ -186,7 +186,11 @@ image_processing:
 Not that by default the image will be classified every 10 seconds, but with the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it using the `image_processing.scan` service described later. Note that the source is `camera.dummy`, which will be the motion triggered image.
 
 #### Tying it all together
-Now that image capture is configured and Classificationbox is available to use, we must link them together using a series of automations in Home-Assistant.
+Now that image capture is configured and Classificationbox is available to use, we must link them together using a sequence of automations in Home-Assistant. The sequence that we setup is illustrated in the diagram below:
+
+<p align="center">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/sequence.png" width="400">
+</p>
 
 Out of the box, Home-Assistant has no knowledge of when the Motion addon captures a new motion triggered image, so I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to alert Home-Assistant to new images in the `/share/motion` directory:
 
