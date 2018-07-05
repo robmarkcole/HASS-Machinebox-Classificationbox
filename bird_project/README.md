@@ -122,31 +122,16 @@ In this project we use Home-Assistant to post images from my motion triggered us
 * **Bird feeder**: My mum bought this, but there are similar online, just search for `windown mounted birdfeeder`.
 
 #### Home-Assistant Configuration
-##### Classificationbox custom component
-First of all you need to [get the code from here](https://github.com/robmarkcole/HASS-Machinebox-Classificationbox) to use Classificationbox with Home-Assistant. This code is called a `custom component` by Home-Assistant users, and it is added by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The `yaml` code-blocks that follow are all code to be entered in the Home-Assistant `configuration.yaml` file.
+This section describes how the various parts of the system are configured in Home-Assistant.
 
-```yaml
-image_processing:
-  - platform: classificationbox
-    ip_address: 192.168.0.18 # Change to the IP hosting Classificationbox
-    port: 8080
-    scan_interval: 100000
-    source:
-      - entity_id: camera.dummy
-```
-With the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it. Next I configure the camera which will have the entity_id `camera.dummy`.
-
-
-##### Motion detection with a USB camera
-I first connected the usb webcam to the raspberry pi, and pointed the webcam at the birdfeeder. I have a number of options for viewing the camera feed in Home-Assistant, but since I am using Hassio and want motion detection, I decided to try out an approach which uses the [Motion](https://motion-project.github.io/) software under the hood. When using Hassio its straightforward to extend the functionality of Home-Assistant by installing ['Hassio addons'](https://www.home-assistant.io/addons/), and these addons are installed via a page on the Home-Assistant interface, shown below:
+##### Motion triggered image capture via Motion addon
+I connected the usb webcam to the raspberry pi and pointed the webcam at the birdfeeder. I have a number of options for viewing the camera feed in Home-Assistant, but since I am using Hassio and want motion detection, I decided to try out an approach which uses the [Motion](https://motion-project.github.io/) software under the hood. When using Hassio its straightforward to extend the functionality of Home-Assistant by installing ['Hassio addons'](https://www.home-assistant.io/addons/), and these addons are installed via a page on the Home-Assistant interface, shown below:
 
 <p align="center">
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/hassio_addons.png" width="900">
 </p>
 
-The addon I am using is written by @HerrHofrat on Github and is called `motion`, and it is available at https://github.com/HerrHofrat/hassio-addons/tree/master/motion You will need to add this repository as a location accessible to Hassio. This addon will both continually capture still images, and additionally capture timestamped images when motion is detected. These images are saved in a folder on the pi, then accessed by Home-Assistant. I experimented with the Motion settings but settled on the configuration below:
-
-
+The addon I am using is written by [@HerrHofrat](https://github.com/HerrHofrat) on Github and is called `motion`, and it is available at https://github.com/HerrHofrat/hassio-addons/tree/master/motion. You will need to add this repository as a location accessible to Hassio (search for the box that stats `Add new repository by URL`). This addon will both continually capture still images, and capture timestamped images when motion is detected. These images are saved in a folder on the pi, then accessed by Home-Assistant. I experimented with the Motion settings but settled on the configuration below. The addon is configured by the Hassio tab for the addon:
 
 ```yaml
 {
@@ -167,17 +152,13 @@ The addon I am using is written by @HerrHofrat on Github and is called `motion`,
 }
 ```
 
+These defaults should work regardless of the usb camera you are using, but if you have several usb cameras attached to your pi you may need to use the terminal to check the camera connection (here `/dev/video0`).
 
-The final view of the camera feed in Home-Assistant is shown below.
+The addon captures an image every second, saved as `latest.jpg`, and this image is continually over-written. On motion detection a time-stamped image is captured with format `%v-%Y_%m_%d_%H_%M_%S-motion-capture.jpg`. All images are saved to the `/share/motion` folder on the pi.
 
-<p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/HA_motion_camera_view.png" width="400">
-</p>
-
-
-This setup captures an image every second, saved as `latest.jpg`, and is over-written every second. Additionally, on motion detection a time-stamped image is captured with format `%v-%Y_%m_%d_%H_%M_%S-motion-capture.jpg`.
-
-The image `latest.jpg` is displayed on the HA front-end using a [local-file camera](https://home-assistant.io/components/camera.local_file/). I will also display the last time-stamped image with a second `local_file` camera. **Note** that the image files (here `latest.jpg` and `dummy.jpg`) must be present when Home-Assistant starts as the component makes a check that the file exists, and therefore if running for the first time just copy some appropriately named images into the `/share/motion` folder. In `configuration.yaml`:
+##### Displaying images on Home-Assistant
+I display the images captured by Motion using a pair of [local-file cameras](https://home-assistant.io/components/camera.local_file/).
+The continually updated `latest.jpg` is displayed on a camera with the name `Live view` and the most recent time-stamped image captured will be displayed on a camera called `dummy`. The configuration for both cameras is added to `configuration.yaml`, shown below:
 
 ```yaml
 camera:
@@ -188,7 +169,31 @@ camera:
     file_path: /share/motion/dummy.jpg
     name: "dummy"
 ```
-I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to detect when new time-stamped images are saved to disk on the raspberry Pi:
+**Note** that the image files (here `latest.jpg` and `dummy.jpg`) must be present when Home-Assistant starts as the component makes a check that the file exists, and therefore if running for the first time just copy some appropriately named images into the `/share/motion` folder. In `configuration.yaml`:
+The final view of the camera feed in Home-Assistant is shown below.
+
+<p align="center">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/HA_motion_camera_view.png" width="400">
+</p>
+
+##### Classificationbox custom component
+To make Classificationbox accessible to Home-Assistant you will first need to get the Classificationbox custom component code from https://github.com/robmarkcole/HASS-Machinebox-Classificationbox. This code is added to Home-Assistant by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The `yaml` code-blocks that follow are all code to be entered in the Home-Assistant `configuration.yaml` file.
+
+```yaml
+image_processing:
+  - platform: classificationbox
+    ip_address: 192.168.0.18 # Change to the IP hosting Classificationbox
+    port: 8080
+    scan_interval: 100000
+    source:
+      - entity_id: camera.dummy
+```
+With the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it using the `image_processing.scan` service described later. Next I configure the camera which will have the entity_id `camera.dummy`.
+
+##### Tying it all together
+Now that image capture is configured, and Classificationbox is available to use, we must link them together using a series of simple automations.
+
+Currently Home-Assistant has no knowledge of when the Motion addon captures an image, so I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to detect when new time-stamped images are saved in the `/share/motion` directory:
 
 ```yaml
 folder_watcher:
@@ -197,7 +202,7 @@ folder_watcher:
       - '*capture.jpg'
 ```
 
-The `folder_watcher` fires an event with data including the image path to the added file. I use an automation to display the new image on the `dummy` camera using the `camera.update_file_path` service:
+The `folder_watcher` fires an event every time a time-stamped image is saved, with the event data including the path to the added image. I use an automation to display the new image on the `dummy` camera using the `camera.update_file_path` service, and the configuration for the automation is shown below, added to `automations.yaml`:
 
 ```yaml
 - action:
@@ -215,7 +220,8 @@ The `folder_watcher` fires an event with data including the image path to the ad
     platform: event
 ```
 
-I use a template sensor (in `sensors.yaml`) to break out the new file path:
+I use a template sensor to display the image file path, configured in n `sensors.yaml`:
+
 ```yaml
 - platform: template
   sensors:
@@ -223,7 +229,8 @@ I use a template sensor (in `sensors.yaml`) to break out the new file path:
       friendly_name: Last added file
       value_template: "{{states.camera.dummy.attributes.file_path}}"
 ```
-I use an automation triggered by the state change of the template sensor to trigger the `image_processing.scan` service which sends the new image for classification by Classificationbox:
+
+I now use an automation to trigger the `image_processing.scan` service which sends the new image for classification by Classificationbox, and this automion triggered by the state change of the template sensor to:
 
 ```yaml
 - id: '1527837198169'
