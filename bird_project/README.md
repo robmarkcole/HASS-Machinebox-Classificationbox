@@ -62,7 +62,7 @@ The if you don't get `"success": true` investigate the issue, otherwise you can 
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/bird_not_bird_examples.png" width="800">
 </p>
 
-I had a total of over 1000 images that I manually sorted in two folders of bird/not-bird images, with each folder containing 500 images (this number may well be excessive, and in future work on this project I will experiment on reducing this number, since its quite prohibitive to require so many images). Make sure that the images you use for training are representative of all the situations you will encounter in use, so for example if you were capturing images at day and night, you want your teaching images to also include images at day and night. With the images sorted into the two folders, I ran the  `teach_classificationbox.py` script to train Classificationbox. For 1000 images, teaching took about 30 minutes on my Macbook Pro with 8 Gb RAM, but obviously this time will vary depending on your project. In also re-ran the teaching with the GO script mentioned earlier and calculated that the model achieved 92% accuracy, pretty respectable! You will want to know the model ID, and can use cURL to check the ID:
+I had a total of over 1000 images that I manually sorted in two folders of bird/not-bird images, with each folder containing 500 images (this number may well be excessive, and in future work on this project I will experiment on reducing this number, since its quite prohibitive to require so many images). Make sure that the images you use for training are representative of all the situations you will encounter in use, so for example if you were capturing images at day and night, you want your teaching images to also include images at day and night. With the images sorted into the two folders, I ran the  `teach_classificationbox.py` script to train Classificationbox. For 1000 images, teaching took about 30 minutes on my Macbook Pro with 8 GB RAM, but obviously this time will vary depending on your project. In also re-ran the teaching with the GO script mentioned earlier and calculated that the model achieved 92% accuracy, pretty respectable! You will want to know the model ID, and can use cURL to check the ID:
 ```cURL
 curl http://localhost:8080/classificationbox/models
 ```
@@ -97,7 +97,7 @@ model_data  = {"base64": file_data}
 requests.post(STATE_POST_URL, json=model_data)
 ```
 
-Replace the IP and PORT with those of your target machine, which for my Synology was `IP 192.168.0.18` You should see a response like:
+Replace the `IP` and `PORT` with those of your target machine, which for my Synology was `IP 192.168.0.18` You should see a response like:
 ```
 {'success': True,
  'id': '5b0ce5d8023d4e35',
@@ -121,7 +121,7 @@ In this project we use Home-Assistant to post images from my motion triggered us
 * **Synology NAS**: The pi 3 doesn't have sufficient RAM to run Classificationbox (2 GB min required) so instead I am running it on my [Synology DS216+II](https://www.amazon.co.uk/gp/product/B01G3HYR6G/ref=oh_aui_search_detailpage?ie=UTF8&psc=1) that I have [upgraded to have 8 GB RAM](http://blog.fedorov.com.au/2016/02/how-to-upgrade-memory-in-synology-ds216.html).
 * **Bird feeder**: My mum bought this, but there are similar online, just search for `windown mounted birdfeeder`.
 
-##### Motion triggered image capture via Motion addon
+#### Motion triggered image capture via Motion addon
 I connected the usb webcam to the raspberry pi and pointed the webcam at the birdfeeder. I have a number of options for viewing the camera feed in Home-Assistant, but since I am using Hassio and want motion detection, I decided to try out an approach which uses the [Motion](https://motion-project.github.io/) software under the hood. When using Hassio it is straightforward to extend the functionality of Home-Assistant by installing ['Hassio addons'](https://www.home-assistant.io/addons/), and these addons are installed via a page on the Home-Assistant interface, shown below:
 
 <p align="center">
@@ -151,7 +151,7 @@ The addon I am using is written by [@HerrHofrat](https://github.com/HerrHofrat) 
 
 The addon captures an image every second, saved as `latest.jpg`, and this image is continually over-written. On motion detection a timestamped image is captured with format `%v-%Y_%m_%d_%H_%M_%S-motion-capture.jpg`. All images are saved to the `/share/motion` folder on the Pi. These defaults should work regardless of the usb camera you are using, but if you have several usb cameras attached to your pi you may need to use the terminal to check the camera connection (here `/dev/video0`).
 
-##### Displaying images on Home-Assistant
+#### Displaying images on Home-Assistant
 I display the images captured by the addon using a pair of [local-file cameras](https://home-assistant.io/components/camera.local_file/).
 The continually updated `latest.jpg` is displayed on a camera with the name `Live view` and the most recent timestamped image captured will be displayed on a camera called `dummy`. The configuration for both cameras is added to `configuration.yaml`, shown below:
 
@@ -171,7 +171,7 @@ The final view of the camera feed in Home-Assistant is shown below.
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/HA_motion_camera_view.png" width="400">
 </p>
 
-##### Classificationbox custom component
+#### Classificationbox custom component
 To make Classificationbox accessible to Home-Assistant you will first need to get the Classificationbox custom component code from https://github.com/robmarkcole/HASS-Machinebox-Classificationbox. This code is added to Home-Assistant by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The `yaml` code-blocks that follow are all code to be entered in the Home-Assistant `configuration.yaml` file.
 
 ```yaml
@@ -185,8 +185,10 @@ image_processing:
 ```
 Not that by default the image will be classified every 10 seconds, but with the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it using the `image_processing.scan` service described later. Note that the source is `camera.dummy`, which will be the motion triggered image.
 
-##### Tying it all together
-Now that image capture is configured and Classificationbox is available to use, we must link them together using a series of simple automations in Home-Assistant. Currently Home-Assistant has no knowledge of when the addon captures a motion triggered image, so I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to alert Home-Assistant to new timestamped images in the `/share/motion` directory:
+#### Tying it all together
+Now that image capture is configured and Classificationbox is available to use, we must link them together using a series of automations in Home-Assistant.
+
+Out of the box, Home-Assistant has no knowledge of when the Motion addon captures a new motion triggered image, so I use the [folder_watcher component](https://www.home-assistant.io/components/folder_watcher/) to alert Home-Assistant to new images in the `/share/motion` directory:
 
 ```yaml
 folder_watcher:
@@ -258,7 +260,7 @@ Finally I use the `image_classification` event fired by the Classificationbox co
     platform: event
 ```
 
-TO DO - ADD CONDITION TO THIS AUTOMATION
+TO DO - ADD CONDITION TO THIS AUTOMATION. UPDATE CLASSIFICATIONBOX COMPONENT AND ADD VERSION TO THIS ARTICLE.
 
 The notification is shown below.
 
