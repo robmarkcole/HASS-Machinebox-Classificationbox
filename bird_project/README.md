@@ -121,9 +121,6 @@ In this project we use Home-Assistant to post images from my motion triggered us
 * **Synology NAS**: The pi 3 doesn't have sufficient RAM to run Classificationbox (2 GB min required) so instead I am running it on my [Synology DS216+II](https://www.amazon.co.uk/gp/product/B01G3HYR6G/ref=oh_aui_search_detailpage?ie=UTF8&psc=1) that I have [upgraded to have 8 GB RAM](http://blog.fedorov.com.au/2016/02/how-to-upgrade-memory-in-synology-ds216.html).
 * **Bird feeder**: My mum bought this, but there are similar online, just search for `windown mounted birdfeeder`.
 
-#### Home-Assistant Configuration
-This section describes how the various parts of the system are configured in Home-Assistant.
-
 ##### Motion triggered image capture via Motion addon
 I connected the usb webcam to the raspberry pi and pointed the webcam at the birdfeeder. I have a number of options for viewing the camera feed in Home-Assistant, but since I am using Hassio and want motion detection, I decided to try out an approach which uses the [Motion](https://motion-project.github.io/) software under the hood. When using Hassio it is straightforward to extend the functionality of Home-Assistant by installing ['Hassio addons'](https://www.home-assistant.io/addons/), and these addons are installed via a page on the Home-Assistant interface, shown below:
 
@@ -260,6 +257,8 @@ Finally I use the `image_classification` event fired by the Classificationbox co
     event_type: image_processing
     platform: event
 ```
+
+TO DO - ADD CONDITION TO THIS AUTOMATION
 
 The notification is shown below.
 
