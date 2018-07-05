@@ -138,13 +138,15 @@ With the long `scan_interval` I am ensuring that image classification will only 
 
 
 ##### Motion detection with a USB camera
-I have a cheap usb webcam that captures images on motion detection [using](https://community.home-assistant.io/t/usb-webcam-on-hassio/37297/7) the [motion](https://motion-project.github.io/) Hassio addon. The final view of the camera feed in Home-Assistant is shown below.
+I first connected the usb webcam to the raspberry pi, and pointed the webcam at the birdfeeder. I have a number of options for viewing the camera feed in Home-Assistant, but since I am using Hassio and want motion detection, I decided to try out an approach which uses the [Motion](https://motion-project.github.io/) software under the hood. When using Hassio its straightforward to extend the functionality of Home-Assistant by installing ['Hassio addons'](https://www.home-assistant.io/addons/), and these addons are installed via a page on the Home-Assistant interface, shown below:
 
 <p align="center">
-<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/HA_motion_camera_view.png" width="400">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/hassio_addons.png" width="900">
 </p>
 
-I've configured the motion add-on via its Hassio tab with the following settings:
+The addon I am using is written by @HerrHofrat on Github and is called `motion`, and it is available at https://github.com/HerrHofrat/hassio-addons/tree/master/motion You will need to add this repository as a location accessible to Hassio. This addon will both continually capture still images, and additionally capture timestamped images when motion is detected. These images are saved in a folder on the pi, then accessed by Home-Assistant. I experimented with the Motion settings but settled on the configuration below:
+
+
 
 ```yaml
 {
@@ -164,6 +166,15 @@ I've configured the motion add-on via its Hassio tab with the following settings
   "webcontrol_html": "on"
 }
 ```
+
+
+The final view of the camera feed in Home-Assistant is shown below.
+
+<p align="center">
+<img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/HA_motion_camera_view.png" width="400">
+</p>
+
+
 This setup captures an image every second, saved as `latest.jpg`, and is over-written every second. Additionally, on motion detection a time-stamped image is captured with format `%v-%Y_%m_%d_%H_%M_%S-motion-capture.jpg`.
 
 The image `latest.jpg` is displayed on the HA front-end using a [local-file camera](https://home-assistant.io/components/camera.local_file/). I will also display the last time-stamped image with a second `local_file` camera. **Note** that the image files (here `latest.jpg` and `dummy.jpg`) must be present when Home-Assistant starts as the component makes a check that the file exists, and therefore if running for the first time just copy some appropriately named images into the `/share/motion` folder. In `configuration.yaml`:
@@ -262,6 +273,7 @@ In summary this write-up has described how to create an image classifier using C
 * Classificationbox: https://machineboxio.com/docs/classificationbox) provides
 * Home-Assistant: https://www.home-assistant.io/
 * Hassio: https://www.home-assistant.io/hassio/
+* Hassio Motion addon: https://github.com/HerrHofrat/hassio-addons/tree/master/motion
 * Docker: https://www.docker.com/community-edition
 * Classificationbox custom component for Home-Assistant: https://github.com/robmarkcole/HASS-Machinebox-Classificationbox
 * Pushbullet: https://www.pushbullet.com/
