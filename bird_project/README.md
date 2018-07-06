@@ -105,7 +105,10 @@ Now that we have confirmed the model is performing correctly, we can download th
 curl http://localhost:8080/classificationbox/state/5b0ce5d8023d4e35 --output 5b0ce5d8023d4e35.classificationbox
 ```
 
-You will want to replace my model ID (`MODEL_ID 5b0ce5d8023d4e35`) with your own. The downloaded file is 60 kb, so small enough to be shared on Github and other online hosts. This is useful if you want others to be able to reproduce your work. There is a variety of ways to post the model file to another instance of Classificationbox, for example if you want to use the model on another machine as I am doing. Search the Classificationbox docs for `Uploading state`. Personally I used the python requests library to post the model file from my Macbook to my  Synology using:
+You will want to replace my model ID (`5b0ce5d8023d4e35`) with your own. Note that just heading to the URL above in your browser will also download the file. The downloaded file is 60 kb, so small enough to be shared on Github and other online hosts. This is useful if you want others to be able to reproduce your work.
+
+##### (Optional) Uploading the model file
+There are a variety of ways to post the model file to another instance of Classificationbox, for example if you want to use the model on another machine as I am doing. Search the Classificationbox docs for `Uploading state`. Personally I used the python requests library to post the model file from my Macbook to my Synology using:
 
 ```python
 import base64
