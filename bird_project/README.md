@@ -99,7 +99,7 @@ I then see:
 	]
 ```
 
-Now that we have confirmed the model is performing correctly, we can download the model as a binary file. This is important if you are on the free tier of Machinebox as the model will be deleted every time you restart the Docker container. Once we have the model binary file we can upload it after restarting the Docker container, or transfer it another machine. In my case I performed teaching on my Macbook but actually want to use the model in production on a Synology NAS. To download the model file I used:
+Now that we have confirmed the model is performing correctly, we can download the model as a binary file. This is important if you are on the [free tier of Machinebox](https://machineboxio.com/#pricing) as the model will be deleted every time you restart the Docker container. Once we have the model binary file we can upload it after restarting the Docker container, or transfer it another machine. In my case I performed teaching on my Macbook but actually want to use the model in production on a Synology NAS. To download the model file I used:
 
 ```cURL
 curl http://localhost:8080/classificationbox/state/5b0ce5d8023d4e35 --output 5b0ce5d8023d4e35.classificationbox
@@ -131,7 +131,7 @@ Replace the `IP` and `PORT` with those of your target machine, which for my Syno
 ### Using Classificationbox with Home-Assistant
 I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the [documents online](https://www.home-assistant.io/). Note that there are a couple of different ways to run Home-Assistant. In this project I am using the Hassio approach which you should [read about here](https://www.home-assistant.io/hassio/), running on a Raspberry Pi 3. However it doesn't matter how you have Home-Assistant running, this project should work with all common approaches.
 
-In this project we use Home-Assistant to post images from my motion triggered usb camera to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
+In this project we use Home-Assistant to post images from my motion triggered USB camera to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
 
 <p align="center">
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/system_overview.png" width="900">
@@ -141,7 +141,7 @@ In this project we use Home-Assistant to post images from my motion triggered us
 * **Webcam**: I picked up a [cheap webcam on Amazon](https://www.amazon.co.uk/gp/product/B000Q3VECE/ref=oh_aui_search_detailpage?ie=UTF8&psc=1). However you can use [any camera](https://www.home-assistant.io/components/#camera) that is compatible with Home-Assistant.
 * **Pi 3**: I have the camera connected via USB to a raspberry pi 3 running Home-Assistant.
 * **Synology NAS**: The pi 3 doesn't have sufficient RAM to run Classificationbox (2 GB min required) so instead I am running it on my [Synology DS216+II](https://www.amazon.co.uk/gp/product/B01G3HYR6G/ref=oh_aui_search_detailpage?ie=UTF8&psc=1) that I have [upgraded to have 8 GB RAM](http://blog.fedorov.com.au/2016/02/how-to-upgrade-memory-in-synology-ds216.html).
-* **Bird feeder**: My mum bought this, but there are similar online, just search for `windown mounted birdfeeder`.
+* **Bird feeder**: My mum bought this, but there are similar online, just search for `window mounted birdfeeder`.
 
 #### Motion triggered image capture via Motion addon
 I connected the usb webcam to the raspberry pi and pointed the webcam at the birdfeeder. I have a number of options for viewing the camera feed in Home-Assistant, but since I am using Hassio and want motion detection, I decided to try out an approach which uses the [Motion](https://motion-project.github.io/) software under the hood. When using Hassio it is straightforward to extend the functionality of Home-Assistant by installing ['Hassio addons'](https://www.home-assistant.io/addons/), and these addons are installed via a page on the Home-Assistant interface, shown below:
@@ -206,7 +206,7 @@ image_processing:
     source:
       - entity_id: camera.dummy
 ```
-Not that by default the image will be classified every 10 seconds, but with the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it using the `image_processing.scan` service described later. Note that the source is `camera.dummy`, which will be the motion triggered image.
+Not that by default the image will be classified every 10 seconds, but with the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it using the `image_processing.scan` service described later. Note that the source is `camera.dummy`, which will be the motion triggered image. The Classificationbox component fires an Home-Assistant `image_processing` [event](https://www.home-assistant.io/docs/configuration/events/) with `event_type=image_classification` when an image is classified with greater than 80% probability, and we use this later to trigger a notification.
 
 #### Tying it all together
 Now that image capture is configured and Classificationbox is available to use, we must link them together using a sequence of automations in Home-Assistant. The sequence that we setup is illustrated in the diagram below, where the blue arrows represent automations:
@@ -283,11 +283,10 @@ Finally I use the `image_classification` event fired by the Classificationbox co
   trigger:
   - event_data:
       event_type: image_classification
+			class_id: birds
     event_type: image_processing
     platform: event
 ```
-
-TO DO - ADD CONDITION TO THIS AUTOMATION. UPDATE CLASSIFICATIONBOX COMPONENT AND ADD VERSION TO THIS ARTICLE.
 
 The notification is shown below.
 
@@ -295,12 +294,17 @@ The notification is shown below.
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/iphone_notification.jpeg" width="400">
 </p>
 
+### Future Work
+Now that I have basic recognition of when a bird image is captured, the next step for this project is to train the classifier to recognise particular species of birds. I have a range of species visiting the birdfeeder including Blue Tits, Robins, Dunnocks, Magpis and even Parakeets. However the vast majority of the visitors are Blue Tits, and I have so far captured relatively few images of the other species, which will make training a classifier on these species more tricky. I may have to use photos of these species from the internet, but another idea is to start a website where users can submit their own images which are then used to create a 'community' classifier that can be shared amongst all users of the website. This would allow studies such as this one to be reproduced at a large scale by many users. I could then investigate ways to capture the statistics on visiting birds (using [counters](https://www.home-assistant.io/components/counter/) and create a custom component to allow people to automatically submit their bird statistics data to studies such as the RSPB annual [Birdwatch](https://www.rspb.org.uk/get-involved/activities/birdwatch/) survey.
+
+
 ### Summary
-In summary this write-up has described how to create an image classifier using Classificationbox, and how to deploy it for use with Home-Assistant. A cheap webcam is used to capture motion triggered images, which are posted to Classificationbox, and if there are birds in the image then the image is sent to my phone as a notification. Future work on this project is to train the classifier to identify different species of birds arriving at the bird feeder. One slight issue I have is that a magpi has been trying to rip the feeder off the window (shown below), so I need to do some work to make it magpi proof (magpi desctruction efforts shown below)! I hope this project inspires you to try out using image classifiers in your projects.
+In summary this write-up has described how to create an image classifier using Classificationbox, and how to deploy it for use with Home-Assistant. A cheap webcam is used to capture motion triggered images, which are posted to Classificationbox, and if there is a successful classification of the image then the image is sent to my phone as a notification. Future work on this project is to train the classifier to identify different species of birds arriving at the bird feeder. One slight issue I have is that a Magpi has recently been trying to rip the feeder off the window (shown below), so I need to do some work to make it Magpi proof (Magpi destruction efforts shown below)! I hope this project inspires you to try out using image classifiers in your projects.
 
 <p align="center">
 <img src="https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/blob/master/bird_project/magpi.png" width="900">
 </p>
+Above: A Magpi either intentionally or unintentionally almost rips the bird feeder off the window. The arriving Blue Tit is unable to feed normally owing to the position of the feeder, but finds another way to feed via a hole in the top of the feeeder!
 
 ### Links
 * Classificationbox: https://machineboxio.com/docs/classificationbox) provides
@@ -310,3 +314,4 @@ In summary this write-up has described how to create an image classifier using C
 * Docker: https://www.docker.com/community-edition
 * Classificationbox custom component for Home-Assistant: https://github.com/robmarkcole/HASS-Machinebox-Classificationbox
 * Pushbullet: https://www.pushbullet.com/
+* RSPB Birdwatch: https://www.rspb.org.uk/get-involved/activities/birdwatch/
