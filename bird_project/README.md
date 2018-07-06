@@ -281,12 +281,11 @@ Finally I use the `image_classification` event fired by the Classificationbox co
         file: ' {{states.camera.dummy.attributes.file_path}} '
     service: notify.pushbullet
   alias: Send classification
-  condition: []
   id: '1120092824611'
   trigger:
   - event_data:
       event_type: image_classification
-			class_id: birds
+      class_id: birds
     event_type: image_processing
     platform: event
 ```
