@@ -1,4 +1,4 @@
-Home-Assistant image classification using [Classificationbox](https://machinebox.io/docs/classificationbox). Follow [this guide](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f ) to create a model/models on Classificationbox. This component adds an `image_processing` entity for each model you have created on Classificationbox, where the state of the entity is the most likely classification of an image using that model. An event is fired when the confidence in classification is above the threshold set by `confidence`, which defaults to 80%.
+Home-Assistant image classification using [Classificationbox](https://machinebox.io/docs/classificationbox). Follow [this guide](https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f ) to create a model/models on Classificationbox. This component adds an `image_processing` entity for each model you have created on Classificationbox, where the state of the entity is the most likely classification of an image using that model. An `image_processing.image_classification` event is fired when the confidence in classification is above the threshold set by `confidence`, which defaults to 80%.
 
 Place the `custom_components` folder in your configuration directory (or add its contents to an existing custom_components folder).
 
@@ -26,18 +26,19 @@ Events can be used as a trigger for automations, and in the example automation b
 ```yaml
 - action:
   - data_template:
-      message: 'Class {{ trigger.event.data.class_id }} with probability {{ trigger.event.data.score }}'
+      message: Class {{ trigger.event.data.id }} with probability {{ trigger.event.data.confidence
+        }}
       title: New image classified
       data:
-        file: ' {{states.camera.dummy.attributes.file_path}} '
+        file: ' {{states.camera.local_file.attributes.file_path}} '
     service: notify.pushbullet
   alias: Send classification
   condition: []
   id: '1120092824611'
   trigger:
   - event_data:
-      event_type: image_classification
-    event_type: image_processing
+      id: birds
+    event_type: image_processing.image_classification
     platform: event
 ```
 
