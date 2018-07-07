@@ -122,7 +122,7 @@ You should see a response like:
  ```
 
 ### Using Classificationbox with Home-Assistant
-I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the [documents online](https://www.home-assistant.io/). Note that there are a couple of different ways to run Home-Assistant. In this project I am using the Hassio approach which you should [read about here](https://www.home-assistant.io/hassio/), running on a Raspberry Pi 3. However it doesn't matter how you have Home-Assistant running, this project should work with all common approaches.
+I have written code to use Classificationbox with Home-Assistant. Home-Assistant is an open source, python 3 home automation hub, and if you are reading this article then I assume you are familiar with it. If not I refer you to the [documents online](https://www.home-assistant.io/). Note that there are a couple of different ways to run Home-Assistant. In this project I am using the Hassio approach which you should [read about here](https://www.home-assistant.io/hassio/), running on a Raspberry Pi 3, and a home-Assistant version newer than 0.70. However it doesn't matter how you have Home-Assistant running, this project should work with all common approaches.
 
 In this project we use Home-Assistant to post images from my motion triggered USB camera to Classificationbox, then if a bird image is classified, we are sent a mobile phone notification with the image. A diagram of the system is shown below:
 
@@ -188,7 +188,7 @@ The final view of the camera feed in Home-Assistant is shown below.
 </p>
 
 #### Classificationbox custom component
-To make Classificationbox accessible to Home-Assistant you will first need to get the Classificationbox custom component code from https://github.com/robmarkcole/HASS-Machinebox-Classificationbox. This code is added to Home-Assistant by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The yaml code-blocks that follow are all code to be entered in the Home-Assistant `configuration.yaml` file.
+To make Classificationbox accessible to Home-Assistant you will first need to get the Classificationbox custom component code from my repo on Github, and this article requires you to use [release v0.3](https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/releases/tag/v0.3). This code is added to Home-Assistant by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The yaml code-blocks that follow are all code to be entered in the Home-Assistant `configuration.yaml` file.
 
 ```yaml
 image_processing:
@@ -199,7 +199,7 @@ image_processing:
     source:
       - entity_id: camera.dummy
 ```
-Not that by default the image will be classified every 10 seconds, but with the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it using the `image_processing.scan` service described later. Note that the source is `camera.dummy`, which will be the motion triggered image. The Classificationbox component fires an Home-Assistant `image_processing` [event](https://www.home-assistant.io/docs/configuration/events/) with `event_type=image_classification` when an image is classified with greater than 80% probability, and we use this later to trigger a notification.
+Not that by default the image will be classified every 10 seconds, but with the long `scan_interval` I am ensuring that image classification will only be performed when I trigger it using the `image_processing.scan` service described later. Note that the source is `camera.dummy`, which will be the motion triggered image. The Classificationbox component fires an Home-Assistant `image_processing.image_classification` [event](https://www.home-assistant.io/docs/configuration/events/) when an image is classified with greater than 80% probability, and we use this later to trigger a notification.
 
 #### Tying it all together
 Now that image capture is configured and Classificationbox is available to use, we must link them together using a sequence of automations in Home-Assistant. The sequence that we setup is illustrated in the diagram below, where the blue arrows represent automations:
@@ -265,18 +265,19 @@ Finally I use the `image_classification` event fired by the Classificationbox co
 ```yaml
 - action:
   - data_template:
-      message: Class {{ trigger.event.data.class_id }} with probability {{ trigger.event.data.score }}
+      message: Class {{ trigger.event.data.id }} with probability {{ trigger.event.data.confidence
+        }}
       title: New image classified
       data:
-        file: ' {{states.camera.dummy.attributes.file_path}} '
+        file: ' {{states.camera.local_file.attributes.file_path}} '
     service: notify.pushbullet
   alias: Send classification
+  condition: []
   id: '1120092824611'
   trigger:
   - event_data:
-      event_type: image_classification
-      class_id: birds
-    event_type: image_processing
+      id: birds
+    event_type: image_processing.image_classification
     platform: event
 ```
 
