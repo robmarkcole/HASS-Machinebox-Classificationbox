@@ -177,7 +177,7 @@ camera:
     file_path: /share/motion/dummy.jpg
     name: "dummy"
 ```
-**Note** that the image files (here `latest.jpg` and `dummy.jpg`) must be present when Home-Assistant starts as the component makes a check that the file exists, and therefore if running for the first time just copy some appropriately named images into the `/share/motion` folder. In `configuration.yaml`:
+**Note** that the image files (here `latest.jpg` and `dummy.jpg`) must be present when Home-Assistant starts as the component makes a check that the file exists, and therefore if running for the first time just copy some appropriately named images into the `/share/motion` folder.
 
 The final view of the camera feed in Home-Assistant is shown below.
 
@@ -300,7 +300,8 @@ In summary this article has described how to create an image classifier using Cl
 **Above:** A Magpi either intentionally or unintentionally almost rips the bird feeder off the window. The arriving Blue Tit is unable to feed normally owing to the position of the feeder, but finds another way to feed via a hole in the top of the feeder!
 
 ### Links
-* Classificationbox: https://machineboxio.com/docs/classificationbox) provides
+* Classificationbox: https://machineboxio.com/docs/classificationbox)
+* Classificationbox training blog post: https://blog.machinebox.io/how-anyone-can-build-a-machine-learning-image-classifier-from-photos-on-your-hard-drive-very-5c20c6f2764f
 * Home-Assistant: https://www.home-assistant.io/
 * Hassio: https://www.home-assistant.io/hassio/
 * Hassio Motion addon: https://github.com/HerrHofrat/hassio-addons/tree/master/motion

@@ -137,8 +137,7 @@ class ClassificationboxEntity(ImageProcessingEntity):
             response_json = response.json()
             if response_json['success']:
                 classes = parse_classes(response_json['classes'])
-                self._state = classes[0][ATTR_ID]
-                self.process_classes(classes)
+                self._state = self.process_classes(classes)
                 self._matched = get_matched_classes(classes)
             else:
                 self._state = None
@@ -146,6 +145,7 @@ class ClassificationboxEntity(ImageProcessingEntity):
 
     def process_classes(self, parsed_classes):
         """Send event for classes above threshold confidence."""
+        state = None
         for class_ in parsed_classes:
             if class_[ATTR_CONFIDENCE] >= self._confidence:
                 self.hass.bus.fire(
@@ -157,6 +157,9 @@ class ClassificationboxEntity(ImageProcessingEntity):
                         ATTR_ID: class_[ATTR_ID],
                         ATTR_CONFIDENCE: class_[ATTR_CONFIDENCE],
                         })
+        if parsed_classes[0][ATTR_CONFIDENCE] >= self._confidence:
+            state = parsed_classes[0][ATTR_ID]
+        return state
 
     @property
     def camera_entity(self):
