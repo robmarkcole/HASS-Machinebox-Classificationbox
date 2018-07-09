@@ -97,16 +97,17 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     PORT = config[CONF_PORT]
     MODELS_URL = 'http://{}:{}/{}/models'.format(IP, PORT, CLASSIFIER)
     models = get_models(MODELS_URL)
-    for model in models:
-        for camera in config[CONF_SOURCE]:
-            entities.append(ClassificationboxEntity(
-                config[CONF_IP_ADDRESS],
-                config[CONF_PORT],
-                camera[CONF_ENTITY_ID],
-                config[CONF_CONFIDENCE],
-                model['id'],
-                model['name'],
-                ))
+    if models:
+        for model in models:
+            for camera in config[CONF_SOURCE]:
+                entities.append(ClassificationboxEntity(
+                    config[CONF_IP_ADDRESS],
+                    config[CONF_PORT],
+                    camera[CONF_ENTITY_ID],
+                    config[CONF_CONFIDENCE],
+                    model['id'],
+                    model['name'],
+                    ))
     add_devices(entities)
 
 
