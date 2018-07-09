@@ -186,7 +186,7 @@ The final view of the camera feed in Home-Assistant is shown below.
 </p>
 
 #### Classificationbox custom component
-To make Classificationbox accessible to Home-Assistant you will first need to get the Classificationbox custom component code from my Github repo, and this article requires you to use [release v0.3](https://github.com/robmarkcole/HASS-Machinebox-Classificationbox/releases/tag/v0.3). This code is added to Home-Assistant by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The yaml code-blocks that follow are code to be entered in the Home-Assistant `configuration.yaml` file, unless otherwise stated. To configure the Classificationbox component, add to the Home-Assistant `configuration.yaml` file:
+To make Classificationbox accessible to Home-Assistant you will need to use the Classificationbox custom component code from this Github repo. This code is added to Home-Assistant by placing the contents of the `custom_components` folder in your Home-Assistant configuration directory (or adding its contents to an existing custom_components folder). The yaml code-blocks that follow are code to be entered in the Home-Assistant `configuration.yaml` file, unless otherwise stated. To configure the Classificationbox component, add to the Home-Assistant `configuration.yaml` file:
 
 ```yaml
 image_processing:
