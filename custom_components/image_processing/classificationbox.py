@@ -17,7 +17,8 @@ from homeassistant.components.image_processing import (
     ATTR_CONFIDENCE, PLATFORM_SCHEMA, ImageProcessingEntity, CONF_SOURCE,
     CONF_ENTITY_ID, CONF_CONFIDENCE)
 from homeassistant.const import (
-    ATTR_ID, ATTR_ENTITY_ID, CONF_IP_ADDRESS, CONF_PORT)
+    ATTR_ID, ATTR_ENTITY_ID, CONF_IP_ADDRESS, CONF_PORT, CONF_PASSWORD,
+    CONF_USERNAME, HTTP_OK, HTTP_UNAUTHORIZED)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +31,26 @@ TIMEOUT = 9
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_IP_ADDRESS): cv.string,
     vol.Required(CONF_PORT): cv.port,
+    vol.Optional(CONF_USERNAME): cv.string,
+    vol.Optional(CONF_PASSWORD): cv.string,
 })
+
+
+def check_box_health(url, username, password):
+    """Check the health of the classifier and return its id if healthy."""
+    kwargs = {}
+    if username:
+        kwargs['auth'] = requests.auth.HTTPBasicAuth(username, password)
+    try:
+        response = requests.get(url, timeout=TIMEOUT, **kwargs)
+        if response.status_code == HTTP_UNAUTHORIZED:
+            _LOGGER.error("AuthenticationError on %s", CLASSIFIER)
+            return None
+        if response.status_code == HTTP_OK:
+            return response.json()['hostname']
+    except requests.exceptions.ConnectionError:
+        _LOGGER.error("ConnectionError: Is %s running?", CLASSIFIER)
+        return None
 
 
 def encode_image(image):
@@ -40,22 +60,28 @@ def encode_image(image):
 
 
 def get_matched_classes(classes):
-    """Return the class_id and rounded score of matched classes."""
+    """Return the id and score of matched classes."""
     return {class_[ATTR_ID]: class_[ATTR_CONFIDENCE] for class_ in classes}
 
 
-def get_models(url):
+def get_models(url, username, password):
     """Return the list of models."""
+    kwargs = {}
+    if username:
+        kwargs['auth'] = requests.auth.HTTPBasicAuth(username, password)
     try:
-        response = requests.get(url, timeout=9)
+        response = requests.get(url, timeout=TIMEOUT, **kwargs)
         response_json = response.json()
         if response_json['success']:
-            if len(response_json['models']) == 0:
+            number_of_models = len(response_json['models'])
+            if number_of_models == 0:
                 _LOGGER.error("%s error: No models found", CLASSIFIER)
+                return None
             else:
                 return response_json['models']
     except requests.exceptions.ConnectionError:
         _LOGGER.error("ConnectionError: Is %s running?", CLASSIFIER)
+        return None
 
 
 def parse_classes(api_classes):
@@ -69,40 +95,54 @@ def parse_classes(api_classes):
     return parsed_classes
 
 
-def post_image(url, image):
+def post_image(url, image, username, password):
     """Post an image to the classifier."""
+    kwargs = {}
+    if username:
+        kwargs['auth'] = requests.auth.HTTPBasicAuth(username, password)
     input_json = {
         "inputs": [{
             "key": "image",
             "type": "image_base64",
-            "value": encode_image(image)}
-                   ]}
+            "value": encode_image(image)}]}
     try:
         response = requests.post(
             url,
             json=input_json,
-            timeout=TIMEOUT
+            **kwargs
             )
         return response
     except requests.exceptions.ConnectionError:
         _LOGGER.error("ConnectionError: Is %s running?", CLASSIFIER)
+        return None
     except ValueError:
         _LOGGER.error("Error with %s query", CLASSIFIER)
+        return None
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the classifier."""
     entities = []
-    IP = config[CONF_IP_ADDRESS]
-    PORT = config[CONF_PORT]
-    MODELS_URL = 'http://{}:{}/{}/models'.format(IP, PORT, CLASSIFIER)
-    models = get_models(MODELS_URL)
+    ip_address = config[CONF_IP_ADDRESS]
+    port = config[CONF_PORT]
+    username = config.get(CONF_USERNAME)
+    password = config.get(CONF_PASSWORD)
+    url_health = "http://{}:{}/healthz".format(ip_address, port)
+    hostname = check_box_health(url_health, username, password)
+    if hostname is None:
+        return
+
+    url_models = 'http://{}:{}/{}/models'.format(ip_address, port, CLASSIFIER)
+    models = get_models(url_models, username, password)
     if models:
         for model in models:
             for camera in config[CONF_SOURCE]:
                 entities.append(ClassificationboxEntity(
-                    config[CONF_IP_ADDRESS],
-                    config[CONF_PORT],
+                    ip_address,
+                    port,
+                    username,
+                    password,
+                    hostname,
                     camera[CONF_ENTITY_ID],
                     config[CONF_CONFIDENCE],
                     model['id'],
@@ -114,11 +154,14 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class ClassificationboxEntity(ImageProcessingEntity):
     """Perform an image classification."""
 
-    def __init__(self, ip, port, camera_entity, confidence,
-                 model_id, model_name):
+    def __init__(self, ip, port, username, password, hostname, 
+                 camera_entity, confidence, model_id, model_name):
         """Init with the camera and model info."""
         super().__init__()
         self._base_url = "http://{}:{}/{}/".format(ip, port, CLASSIFIER)
+        self._username = username
+        self._password = password
+        self._hostname = hostname
         self._camera = camera_entity
         self._confidence = confidence
         self._model_id = model_id
@@ -133,7 +176,8 @@ class ClassificationboxEntity(ImageProcessingEntity):
         """Process an image."""
         predict_url = urljoin(
             self._base_url, "models/{}/predict".format(self._model_id))
-        response = post_image(predict_url, image)
+        response = post_image(predict_url, image,
+                              self._username, self._password)
         if response is not None:
             response_json = response.json()
             if response_json['success']:
@@ -183,7 +227,8 @@ class ClassificationboxEntity(ImageProcessingEntity):
         attr = {
             ATTR_CONFIDENCE: self._confidence,
             ATTR_MODEL_ID: self._model_id,
-            ATTR_MODEL_NAME: self._model_name
+            ATTR_MODEL_NAME: self._model_name,
+            'hostname': self._hostname
             }
         attr.update(self._matched)
         return attr
