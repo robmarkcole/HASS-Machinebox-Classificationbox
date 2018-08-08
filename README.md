@@ -8,6 +8,8 @@ image_processing:
   - platform: classificationbox
     ip_address: localhost
     port: 8080
+    username: my_username
+    password: my_password
     confidence: 50
     source:
       - entity_id: camera.local_file
@@ -16,7 +18,9 @@ image_processing:
 Configuration variables:
 - **ip_address**: the ip of your Tagbox instance
 - **port**: the port of your Tagbox instance
-- **confidence** (Optional): The minimum of confidence in percent to fire an event. Defaults to 80.
+- **username**: (Optional) the username if you are using authentication
+- **password**: (Optional) the password if you are using authentication
+- **confidence** (Optional): The minimum of confidence in percent to fire an event. Defaults to 80
 - **source**: must be a camera.
 
 ## Automations using events
@@ -56,6 +60,11 @@ Run the container with:
 ```
 MB_KEY="INSERT-YOUR-KEY-HERE"
 sudo docker run -p 8080:8080 -e "MB_KEY=$MB_KEY" machinebox/classificationbox
+```
+
+To run [with authentication](https://machinebox.io/docs/machine-box-apis#basic-authentication):
+```
+sudo docker run -e "MB_BASICAUTH_USER=my_username" -e "MB_BASICAUTH_PASS=my_password" -p 8080:8080 -e "MB_KEY=$MB_KEY" machinebox/classificationbox
 ```
 
 Classification box is trained on https://storage.googleapis.com/openimages/web/index.html
