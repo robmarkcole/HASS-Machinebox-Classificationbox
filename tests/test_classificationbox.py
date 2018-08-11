@@ -7,9 +7,9 @@ import requests_mock
 
 from homeassistant.core import callback
 from homeassistant.const import (
-    ATTR_ID, ATTR_ENTITY_ID, ATTR_NAME, CONF_FRIENDLY_NAME,
-    CONF_IP_ADDRESS, CONF_PORT, HTTP_BAD_REQUEST, HTTP_OK, HTTP_UNAUTHORIZED, 
-    STATE_UNKNOWN)
+    ATTR_ID, ATTR_ENTITY_ID, ATTR_NAME, CONF_FRIENDLY_NAME, CONF_PASSWORD,
+    CONF_USERNAME, CONF_IP_ADDRESS, CONF_PORT, HTTP_BAD_REQUEST, HTTP_OK, 
+    HTTP_UNAUTHORIZED, STATE_UNKNOWN)
 from homeassistant.setup import async_setup_component
 import homeassistant.components.image_processing as ip
 import homeassistant.components.image_processing.classificationbox as cb
@@ -33,6 +33,8 @@ MOCK_NO_MODELS = {'success': True, 'models': []}
 MOCK_MODELS = [{'id': '12345', 'name': '12345'}]
 MOCK_MODEL_ID = '12345'
 MOCK_NAME = 'mock_name'
+MOCK_USERNAME = 'mock_username'
+MOCK_PASSWORD = 'mock_password'
 
 # Classes data after parsing.
 PARSED_CLASSES = [{ATTR_ID: 'birds', ip.ATTR_CONFIDENCE: 91.59},
@@ -109,6 +111,17 @@ async def test_setup_platform(hass, mock_healthybox):
                return_value=MOCK_MODELS):
         await async_setup_component(hass, ip.DOMAIN, VALID_CONFIG)
         await hass.async_block_till_done()
+        assert hass.states.get(VALID_ENTITY_ID)
+
+
+async def test_setup_platform_with_auth(hass, mock_healthybox):
+    """Setup platform with one entity and auth."""
+    valid_config_auth = VALID_CONFIG.copy()
+    valid_config_auth[ip.DOMAIN][CONF_USERNAME] = MOCK_USERNAME
+    valid_config_auth[ip.DOMAIN][CONF_PASSWORD] = MOCK_PASSWORD
+    with patch('homeassistant.components.image_processing.classificationbox.get_models',
+                return_value=MOCK_MODELS):
+        await async_setup_component(hass, ip.DOMAIN, valid_config_auth)
         assert hass.states.get(VALID_ENTITY_ID)
 
 
