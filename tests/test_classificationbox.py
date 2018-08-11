@@ -8,8 +8,8 @@ import requests_mock
 from homeassistant.core import callback
 from homeassistant.const import (
     ATTR_ID, ATTR_ENTITY_ID, CONF_FRIENDLY_NAME, CONF_PASSWORD,
-    CONF_USERNAME, CONF_IP_ADDRESS, CONF_PORT, HTTP_BAD_REQUEST, HTTP_OK,
-    HTTP_UNAUTHORIZED, STATE_UNKNOWN)
+    CONF_USERNAME, CONF_IP_ADDRESS, CONF_PORT, HTTP_OK,
+    HTTP_UNAUTHORIZED)
 from homeassistant.setup import async_setup_component
 import homeassistant.components.image_processing as ip
 import homeassistant.components.image_processing.classificationbox as cb
@@ -22,7 +22,8 @@ MOCK_FILE_PATH = '/images/mock.jpg'
 
 MOCK_HEALTH = {'success': True,
                'hostname': 'b893cc4f7fd6',
-               'metadata': {'boxname': 'facebox', 'build': 'development'},
+               'metadata': {'boxname': 'classificationbox',
+                            'build': 'development'},
                'errors': []}
 
 MOCK_JSON = {'success': True,
@@ -113,6 +114,10 @@ def test_get_models(caplog):
         mock_req.get(url, json=MOCK_WITH_MODEL)
         assert cb.get_models(url, 'user', 'pass') == MOCK_MODEL
 
+        mock_req.get(url, exc=requests.exceptions.ConnectTimeout)
+        cb.get_models(url, 'user', 'pass')
+        assert "ConnectionError: Is classificationbox running?" in caplog.text
+
 
 def test_parse_classes():
     """Test parsing of raw API data"""
@@ -181,3 +186,34 @@ async def test_process_image(hass, mock_image, mock_healthybox):
     assert len(classification_events) == 1
     assert classification_events[0].data[ATTR_ID] == 'birds'
     assert classification_events[0].data[ip.ATTR_CONFIDENCE] == 91.59
+
+
+async def test_process_image_errors(hass, mock_healthybox, mock_image, caplog):
+    """Test post_image errors."""
+    with patch('homeassistant.components.image_processing.classificationbox.get_models',
+               return_value=MOCK_MODEL):
+        await async_setup_component(hass, ip.DOMAIN, VALID_CONFIG)
+        assert hass.states.get(VALID_ENTITY_ID)
+
+    # Test connection error.
+    with requests_mock.Mocker() as mock_req:
+        url = 'http://{}:{}/{}/models/{}/predict'.format(
+            MOCK_IP,
+            MOCK_PORT,
+            cb.CLASSIFIER,
+            MOCK_MODEL_ID)
+        mock_req.register_uri(
+            'POST', url, exc=requests.exceptions.ConnectTimeout)
+        data = {ATTR_ENTITY_ID: VALID_ENTITY_ID}
+        await hass.services.async_call(ip.DOMAIN,
+                                       ip.SERVICE_SCAN,
+                                       service_data=data)
+        await hass.async_block_till_done()
+        assert "ConnectionError: Is classificationbox running?" in caplog.text
+
+        mock_req.register_uri('POST', url, exc=ValueError)
+        await hass.services.async_call(ip.DOMAIN,
+                                       ip.SERVICE_SCAN,
+                                       service_data=data)
+        await hass.async_block_till_done()
+        assert "Error with classificationbox query" in caplog.text
