@@ -30,7 +30,8 @@ MOCK_JSON = {'success': True,
                          {'id': 'not_birds', 'score': 0.084108}]}
 
 MOCK_NO_MODELS = {'success': True, 'models': []}
-MOCK_MODELS = [{'id': '12345', 'name': '12345'}]
+MOCK_MODEL = [{'id': '12345', 'name': '12345'}]
+MOCK_WITH_MODEL = {'success': True, 'models': MOCK_MODEL}
 MOCK_MODEL_ID = '12345'
 MOCK_NAME = 'mock_name'
 MOCK_USERNAME = 'mock_username'
@@ -100,6 +101,19 @@ def test_get_matched_classes():
     assert cb.get_matched_classes(PARSED_CLASSES) == MATCHED_CLASSES
 
 
+def test_get_models(caplog):
+    """Test querying the list of models."""
+    with requests_mock.Mocker() as mock_req:
+        url = "http://{}:{}/{}/models".format(
+            MOCK_IP, MOCK_PORT, cb.CLASSIFIER)
+        mock_req.get(url, json=MOCK_NO_MODELS)
+        assert cb.get_models(url, 'user', 'pass') == None
+        assert "classificationbox error: No models found" in caplog.text
+
+        mock_req.get(url, json=MOCK_WITH_MODEL)
+        assert cb.get_models(url, 'user', 'pass') == MOCK_MODEL
+  
+
 def test_parse_classes():
     """Test parsing of raw API data"""
     assert cb.parse_classes(MOCK_JSON['classes']) == PARSED_CLASSES
@@ -108,7 +122,7 @@ def test_parse_classes():
 async def test_setup_platform(hass, mock_healthybox):
     """Setup platform with one entity."""
     with patch('homeassistant.components.image_processing.classificationbox.get_models',
-               return_value=MOCK_MODELS):
+               return_value=MOCK_MODEL):
         await async_setup_component(hass, ip.DOMAIN, VALID_CONFIG)
         await hass.async_block_till_done()
         assert hass.states.get(VALID_ENTITY_ID)
@@ -120,7 +134,7 @@ async def test_setup_platform_with_auth(hass, mock_healthybox):
     valid_config_auth[ip.DOMAIN][CONF_USERNAME] = MOCK_USERNAME
     valid_config_auth[ip.DOMAIN][CONF_PASSWORD] = MOCK_PASSWORD
     with patch('homeassistant.components.image_processing.classificationbox.get_models',
-                return_value=MOCK_MODELS):
+                return_value=MOCK_MODEL):
         await async_setup_component(hass, ip.DOMAIN, valid_config_auth)
         assert hass.states.get(VALID_ENTITY_ID)
 
@@ -128,7 +142,7 @@ async def test_setup_platform_with_auth(hass, mock_healthybox):
 async def test_process_image(hass, mock_image, mock_healthybox):
     """Test processing of an image."""
     with patch('homeassistant.components.image_processing.classificationbox.get_models',
-               return_value=MOCK_MODELS):
+               return_value=MOCK_MODEL):
         await async_setup_component(hass, ip.DOMAIN, VALID_CONFIG)
         await hass.async_block_till_done()
         assert hass.states.get(VALID_ENTITY_ID)
