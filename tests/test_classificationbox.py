@@ -120,7 +120,7 @@ def test_get_models(caplog):
 
 
 def test_parse_classes():
-    """Test parsing of raw API data"""
+    """Test parsing of raw API data."""
     assert cb.parse_classes(MOCK_JSON['classes']) == PARSED_CLASSES
 
 
