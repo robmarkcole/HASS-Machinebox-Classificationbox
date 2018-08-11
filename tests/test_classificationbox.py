@@ -8,15 +8,22 @@ import requests_mock
 from homeassistant.core import callback
 from homeassistant.const import (
     ATTR_ID, ATTR_ENTITY_ID, ATTR_NAME, CONF_FRIENDLY_NAME,
-    CONF_IP_ADDRESS, CONF_PORT, STATE_UNKNOWN)
+    CONF_IP_ADDRESS, CONF_PORT, HTTP_BAD_REQUEST, HTTP_OK, HTTP_UNAUTHORIZED, 
+    STATE_UNKNOWN)
 from homeassistant.setup import async_setup_component
 import homeassistant.components.image_processing as ip
 import homeassistant.components.image_processing.classificationbox as cb
 
+MOCK_BOX_ID = 'b893cc4f7fd6'
 MOCK_IP = '192.168.0.1'
 MOCK_PORT = '8080'
 
 MOCK_FILE_PATH = '/images/mock.jpg'
+
+MOCK_HEALTH = {'success': True,
+               'hostname': 'b893cc4f7fd6',
+               'metadata': {'boxname': 'facebox', 'build': 'development'},
+               'errors': []}
 
 MOCK_JSON = {'success': True,
              'classes': [{'id': 'birds', 'score': 0.915892},
@@ -48,6 +55,39 @@ VALID_CONFIG = {
     }
 
 
+@pytest.fixture
+def mock_healthybox():
+    """Mock cb.check_box_health."""
+    check_box_health = 'homeassistant.components.image_processing.' \
+        'classificationbox.check_box_health'
+    with patch(check_box_health, return_value=MOCK_BOX_ID) as _mock_healthybox:
+        yield _mock_healthybox
+
+
+@pytest.fixture
+def mock_image():
+    """Return a mock camera image."""
+    with patch('homeassistant.components.camera.demo.DemoCamera.camera_image',
+               return_value=b'Test') as image:
+        yield image
+
+
+def test_check_box_health(caplog):
+    """Test check box health."""
+    with requests_mock.Mocker() as mock_req:
+        url = "http://{}:{}/healthz".format(MOCK_IP, MOCK_PORT)
+        mock_req.get(url, status_code=HTTP_OK, json=MOCK_HEALTH)
+        assert cb.check_box_health(url, 'user', 'pass') == MOCK_BOX_ID
+
+        mock_req.get(url, status_code=HTTP_UNAUTHORIZED)
+        assert cb.check_box_health(url, None, None) is None
+        assert "AuthenticationError on classificationbox" in caplog.text
+
+        mock_req.get(url, exc=requests.exceptions.ConnectTimeout)
+        cb.check_box_health(url, None, None)
+        assert "ConnectionError: Is classificationbox running?" in caplog.text
+
+
 def test_encode_image():
     """Test that binary data is encoded correctly."""
     assert cb.encode_image(b'test') == 'dGVzdA=='
@@ -59,19 +99,11 @@ def test_get_matched_classes():
 
 
 def test_parse_classes():
-    """Test parsing of raw face data, and generation of matched_faces."""
+    """Test parsing of raw API data"""
     assert cb.parse_classes(MOCK_JSON['classes']) == PARSED_CLASSES
 
 
-@pytest.fixture
-def mock_image():
-    """Return a mock camera image."""
-    with patch('homeassistant.components.camera.demo.DemoCamera.camera_image',
-               return_value=b'Test') as image:
-        yield image
-
-
-async def test_setup_platform(hass):
+async def test_setup_platform(hass, mock_healthybox):
     """Setup platform with one entity."""
     with patch('homeassistant.components.image_processing.classificationbox.get_models',
                return_value=MOCK_MODELS):
@@ -80,7 +112,7 @@ async def test_setup_platform(hass):
         assert hass.states.get(VALID_ENTITY_ID)
 
 
-async def test_process_image(hass, mock_image):
+async def test_process_image(hass, mock_image, mock_healthybox):
     """Test processing of an image."""
     with patch('homeassistant.components.image_processing.classificationbox.get_models',
                return_value=MOCK_MODELS):
